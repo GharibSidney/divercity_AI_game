@@ -3,9 +3,9 @@ from seahorse.game.game_state import GameState
 
 # state: GameState
 def minimaxSearch(state: GameState, isMax):
-    if isMax: v,m = maxValue(state)
-    else: v,m = minValue(state)
-    return v,m
+    if isMax: v, m = maxValue(state)
+    else: v, m = minValue(state)
+    return v, m
 
 def maxValue(state: GameState):
     if isTerminal(state):
