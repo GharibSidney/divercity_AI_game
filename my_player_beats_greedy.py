@@ -3,6 +3,7 @@ from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
+from seahorse.game.light_action import LightAction
 import random
 import math
 
@@ -57,8 +58,8 @@ class MyPlayer(PlayerDivercite):
 
         if len(possible_actions_light) == 164:
             for action in possible_actions_light:
-                print(action.data)
-            return possible_actions_light[16]
+                print('data', action.data)
+            return LightAction({'piece': 'GR', 'position': (0, 4)})
         
         self.counter += 1
         

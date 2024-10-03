@@ -37,6 +37,12 @@ def isTerminal(state: GameState, depth_max: int):
     NotImplementedError()
 
 def getPossibleActions(state: GameState):
-    NotImplementedError()
+    # J'ai mis un fonction dans une functon, car 
+    # si jamais on veut changer pour light action
+    # on aura qu'à changer le return
+    return state.generate_possible_heavy_actions()
+
 def transition(state: GameState, action: Action):
+    best_score = action.get_next_game_state().scores[self.get_id()] - action.get_next_game_state().scores[opponent_id]
+
     NotImplementedError()
