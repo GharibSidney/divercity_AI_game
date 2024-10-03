@@ -3,8 +3,6 @@ from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
-import random
-import math
 
 class MyPlayer(PlayerDivercite):
     """
@@ -37,12 +35,4 @@ class MyPlayer(PlayerDivercite):
         """
 
         #TODO
-        possible_actions = current_state.get_possible_light_actions()
-        # print('possible action', list(possible_actions))
-        return random.choice(list(possible_actions))
-
-    def minMax():
-        MethodNotImplementedError()
-
-
- 
+        raise MethodNotImplementedError()
