@@ -41,11 +41,6 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        #TODO
-        # possible_actions = current_state.get_possible_light_actions()
-        # # print('possible action', list(possible_actions))
-        # return random.choice(list(possible_actions))
-
         possible_actions = current_state.generate_possible_heavy_actions()
         possible_actions_light = current_state.get_possible_light_actions()
         possible_actions_light = list(possible_actions_light)
