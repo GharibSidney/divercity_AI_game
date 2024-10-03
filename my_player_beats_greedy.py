@@ -48,10 +48,7 @@ class MyPlayer(PlayerDivercite):
 
         best_action = next(possible_actions)
         ### TODO essayer de juste le faire une fois et pas à chaque coup!
-        opponent_id = 0
-        for players in current_state.players:
-            if players.get_id() != self.get_id():
-                opponent_id = players.get_id()
+        opponent_id = self.get_opponent_id()
         ### TODO END
 
         best_score = best_action.get_next_game_state().scores[self.get_id()] - best_action.get_next_game_state().scores[opponent_id]
@@ -90,4 +87,9 @@ class MyPlayer(PlayerDivercite):
         MethodNotImplementedError()
 
 
- 
+    def get_opponent_id(self, current_state:GameState):
+        opponent_id = 0
+        for players in current_state.players:
+            if players.get_id() != self.get_id():
+                opponent_id = players.get_id()
+        return opponent_id
