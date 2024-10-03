@@ -33,7 +33,7 @@ def minValue(state: GameState):
             m_star = action
     return v_star, m_star
     
-def isTerminal(state: GameState):
+def isTerminal(state: GameState, depth_max: int):
     NotImplementedError()
 
 def getPossibleActions(state: GameState):
