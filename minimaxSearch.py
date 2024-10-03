@@ -1,6 +1,7 @@
 from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
-from my_player import  MyPlayer
+# éventuellement modifier le prochain import
+from my_player_beats_greedy import  MyPlayer 
 
 
 class minimaxSearch():
@@ -43,12 +44,13 @@ class minimaxSearch():
         NotImplementedError()
 
     def getPossibleActions(self, state: GameState):
-        # J'ai mis un fonction dans une functon, car 
+        # J'ai mis un fonction dans une fonction, car 
         # si jamais on veut changer pour light action
         # on aura qu'à changer le return
         return state.generate_possible_heavy_actions()
 
     def transition(self, state: GameState, action: Action):
+        opponent_id = self.player.get_opponent_id(state)
         best_score = action.get_next_game_state().scores[self.player.get_id()] - action.get_next_game_state().scores[opponent_id]
 
         NotImplementedError()
