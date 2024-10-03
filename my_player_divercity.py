@@ -48,9 +48,10 @@ class MyPlayer(PlayerDivercite):
 
         # print('possible_actions', possible_actions_light[0])
         print("========================================")
-        print(current_state)
-        player_cities = self.get_player_cities(current_state)
+        # print(current_state)
+        player_cities = self.get_player_cities(current_state, self.get_id())
         print(player_cities)
+        self.isPossibleDivercity(current_state, self.get_id())
         print("========================================")
 
         best_action = next(possible_actions)
@@ -74,6 +75,34 @@ class MyPlayer(PlayerDivercite):
                         player_cities.append((i, j))
         
         return player_cities
+    
+    def allPossibleDivercities(self, current_state: GameStateDivercite, player_id: int):
+        player_cities = self.get_player_cities(current_state, player_id)
+        all_possible_divercities = []
+        
+        for city in player_cities:
+            x, y = city
+            if current_state.check_divercite(x,y):
+                break
+            neighbours = current_state.get_neighbours(x, y)
+
+            neighbor_colors_count = {"R": 0, "G": 0, "B": 0, "Y": 0}
+
+            for direction, (piece, (nx, ny)) in neighbours.items():
+                if isinstance(piece, Piece):
+                    piece_color = piece.get_type()[0]
+                    neighbor_colors_count[piece_color] += 1
+            
+            repeated_colors = False
+            for key in neighbor_colors_count:
+                if neighbor_colors_count[key] > 1:
+                    repeated_colors = True
+                    break
+            
+            if not repeated_colors:
+                all_possible_divercities.append(city)
+
+        return all_possible_divercities
 
 
 
