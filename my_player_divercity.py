@@ -49,9 +49,16 @@ class MyPlayer(PlayerDivercite):
         # print('possible_actions', possible_actions_light[0])
         print("========================================")
         # print(current_state)
+
         player_cities = self.get_player_cities(current_state, self.get_id())
+        print(f"voici les villes de player {self.get_name()} avant le coup:")
         print(player_cities)
-        self.isPossibleDivercity(current_state, self.get_id())
+
+
+        #Trouver les divercities semble marcher
+        allPossibleDivercities = self.allPossibleDivercities(current_state, self.get_id())
+        print(f"voici les divercities possibles de player {self.get_name()} avant le coup:")
+        print(allPossibleDivercities)
         print("========================================")
 
         best_action = next(possible_actions)
@@ -82,8 +89,11 @@ class MyPlayer(PlayerDivercite):
         
         for city in player_cities:
             x, y = city
-            if current_state.check_divercite(x,y):
+            coords = [x,y]
+            if current_state.check_divercite(coords):
                 break
+
+
             neighbours = current_state.get_neighbours(x, y)
 
             neighbor_colors_count = {"R": 0, "G": 0, "B": 0, "Y": 0}
@@ -100,7 +110,7 @@ class MyPlayer(PlayerDivercite):
                     break
             
             if not repeated_colors:
-                all_possible_divercities.append(city)
+                all_possible_divercities.append(city) 
 
         return all_possible_divercities
 
