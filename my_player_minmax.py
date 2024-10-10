@@ -28,7 +28,7 @@ class MyPlayer(PlayerDivercite):
         print('get init')
         self.isFirstMove = True
         self.counter = 0
-        self.minimaxSearch = minimaxSearch(self)
+        
 
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
@@ -41,6 +41,13 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-
-        #TODO
-        raise MethodNotImplementedError()
+        #TODO try to initialize the minimaxSearch only once
+        self.minimaxSearch = minimaxSearch(self, current_state)
+        possible_actions = current_state.generate_possible_heavy_actions()
+        possible_actions_light = current_state.get_possible_light_actions()
+        possible_actions_light = list(possible_actions_light)
+        return self.minimaxSearch.minimaxSearch(current_state, True) #to see if useful
+        best_action = next(possible_actions)
+        ### TODO essayer de juste le faire une fois et pas à chaque coup!
+        opponent_id = self.get_opponent_id()
+        ### TODO END
