@@ -69,68 +69,51 @@ class MyPlayer(PlayerDivercite):
 
 
     def get_player_cities(self, current_state: GameStateDivercite, player_id: int):
-        player_cities = []
-        board = current_state.get_rep()
-        dimensions = board.get_dimensions()
-
-        for i in range(dimensions[0]):
-            for j in range(dimensions[1]):
-                piece = board.get_env().get((i, j))
-                if piece and isinstance(piece, Piece):
-                    if piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id:
-                        player_cities.append((i, j))
-        
-        return player_cities
+            board = current_state.get_rep().get_env()
+            return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
     
     def allPossibleDivercities(self, current_state: GameStateDivercite, player_id: int):
         player_cities = self.get_player_cities(current_state, player_id)
         all_possible_divercities = []
-        
-        for city in player_cities:
-            x, y = city
-            coords = [x,y]
-            if current_state.check_divercite(coords):
+
+        for x, y in player_cities:
+            if current_state.check_divercite([x, y]):
                 continue
-                #HERE
-
-
+            
             neighbours = current_state.get_neighbours(x, y)
-
             neighbor_colors_count = {"R": 0, "G": 0, "B": 0, "Y": 0}
 
-            for direction, (piece, (nx, ny)) in neighbours.items():
+            for _, (piece, _) in neighbours.items():
                 if isinstance(piece, Piece):
-                    piece_color = piece.get_type()[0]
-                    neighbor_colors_count[piece_color] += 1
-            
-            repeated_colors = False
-            for key in neighbor_colors_count:
-                if neighbor_colors_count[key] > 1:
-                    repeated_colors = True
-                    break
-            
-            if not repeated_colors:
-                # ressource_missing = 4 - sum(neighbor_colors_count.values())
-                ressource_missings = [key + 'R' for key, value in neighbor_colors_count.items() if value == 0]
-                all_possible_divercities.append((city, ressource_missings))
+                    neighbor_colors_count[piece.get_type()[0]] += 1
+
+            if any(count > 1 for count in neighbor_colors_count.values()):
+                continue
+
+            ressource_missings = [color + 'R' for color, count in neighbor_colors_count.items() if count == 0]
+            all_possible_divercities.append(((x, y), ressource_missings))
 
         return all_possible_divercities
     
     def doDivercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
         remaining_pieces = current_state.players_pieces_left.get(player_id, {})
-        for coordinates, ressource_missings in all_possible_divercities:
-            x, y = coordinates
+
+        for (x, y), ressource_missings in all_possible_divercities:
             neighbours = current_state.get_neighbours(x, y)
+
             for direction, (piece, (nx, ny)) in neighbours.items():
                 if piece == 'EMPTY':
-                    chosen_piece = random.choice([piece for piece in remaining_pieces if piece in ressource_missings and remaining_pieces[piece] > 0])
-                    action_data = {
-                        'player_id': player_id,
-                        'piece': chosen_piece,
-                        'position': (nx, ny)
-                    }
-                    print(LightAction(action_data))
-                    return LightAction(action_data)
+                    valid_pieces = [p for p in remaining_pieces if p in ressource_missings and remaining_pieces[p] > 0]
+
+                    if valid_pieces:
+                        chosen_piece = random.choice(valid_pieces)
+                        action_data = {
+                            'player_id': player_id,
+                            'piece': chosen_piece,
+                            'position': (nx, ny)
+                        }
+                        return LightAction(action_data)
+
         return None
             
 
