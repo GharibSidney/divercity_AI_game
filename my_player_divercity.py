@@ -59,9 +59,10 @@ class MyPlayer(PlayerDivercite):
 
         divercity_action = self.do_divercity(current_state, self.get_id(), allPossibleDivercities)
         print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
-
+        destroy_opponent_divercity_action = self.prevent_opponent_divercity(current_state, self.get_id())
         best_action = next(possible_actions)
-        return divercity_action if divercity_action is not None else best_action
+        # return divercity_action if divercity_action is not None else best_action
+        return destroy_opponent_divercity_action if destroy_opponent_divercity_action is not None else best_action
         
 
     def minMax():
@@ -115,15 +116,29 @@ class MyPlayer(PlayerDivercite):
                         return LightAction(action_data)
 
         return None
-            
+    
+    def prevent_opponent_divercity(self, current_state: GameStateDivercite, my_player_id: int):
+        opponent_id = self.get_opponent_id(current_state)
+        my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
+        ordered_opponents_all_possible_divercities = sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
+        for (x, y), ressource_missings in ordered_opponents_all_possible_divercities:
+            neighbours = current_state.get_neighbours(x, y)
 
+            for direction, (piece, (nx, ny)) in neighbours.items():
+                if piece == 'EMPTY':
+                    valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in ressource_missings and my_remaining_pieces[p] > 0 and p[1] == 'R']
+                    if valid_pieces_destroy_opponent_divercity:
+                        chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity)
+                        action_data = {
+                            'player_id': my_player_id,
+                            'piece': chosen_piece,
+                            'position': (nx, ny)
+                        }
+                        return LightAction(action_data)
 
-
-
-
-
-
-
-
-
- 
+        return None
+    
+    def get_opponent_id(self, current_state: GameStateDivercite) -> int:
+        for player in current_state.players:
+            if player.get_id() != self.get_id():
+                return player.get_id()
