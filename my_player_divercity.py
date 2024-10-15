@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from player_divercite import PlayerDivercite
 from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
@@ -6,6 +7,7 @@ from seahorse.utils.custom_exceptions import MethodNotImplementedError
 from seahorse.game.game_layout.board import Board, Piece
 import random
 import math
+from seahorse.game.light_action import LightAction
 
 class MyPlayer(PlayerDivercite):
     """
@@ -41,28 +43,25 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-
         possible_actions = current_state.generate_possible_heavy_actions()
         possible_actions_light = current_state.get_possible_light_actions()
         possible_actions_light = list(possible_actions_light)
 
-        # print('possible_actions', possible_actions_light[0])
-        print("========================================")
-        # print(current_state)
 
         player_cities = self.get_player_cities(current_state, self.get_id())
-        print(f"voici les villes de player {self.get_name()} avant le coup:")
+        print(f"voici les villes de player {self.get_name()} AVANT LE COUP (ca match avec ce qui ya en haut du separateur):")
         print(player_cities)
 
 
-        #Trouver les divercities semble marcher
         allPossibleDivercities = self.allPossibleDivercities(current_state, self.get_id())
-        print(f"voici les divercities possibles de player {self.get_name()} avant le coup:")
+        print(f"voici les divercities possibles de player {self.get_name()} AVANT LE COUP (ca match avec ce qui ya en haut du separateur):")
         print(allPossibleDivercities)
-        print("========================================")
+
+        divercity_action = self.doDivercity(current_state, self.get_id(), allPossibleDivercities)
+        print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 
         best_action = next(possible_actions)
-        return best_action
+        return divercity_action if divercity_action is not None else best_action
         
 
     def minMax():
@@ -91,7 +90,8 @@ class MyPlayer(PlayerDivercite):
             x, y = city
             coords = [x,y]
             if current_state.check_divercite(coords):
-                break
+                continue
+                #HERE
 
 
             neighbours = current_state.get_neighbours(x, y)
@@ -110,9 +110,32 @@ class MyPlayer(PlayerDivercite):
                     break
             
             if not repeated_colors:
-                all_possible_divercities.append(city) 
+                # ressource_missing = 4 - sum(neighbor_colors_count.values())
+                ressource_missings = [key + 'R' for key, value in neighbor_colors_count.items() if value == 0]
+                all_possible_divercities.append((city, ressource_missings))
 
         return all_possible_divercities
+    
+    def doDivercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
+        remaining_pieces = current_state.players_pieces_left.get(player_id, {})
+        for coordinates, ressource_missings in all_possible_divercities:
+            x, y = coordinates
+            neighbours = current_state.get_neighbours(x, y)
+            for direction, (piece, (nx, ny)) in neighbours.items():
+                if piece == 'EMPTY':
+                    chosen_piece = random.choice([piece for piece in remaining_pieces if piece in ressource_missings and remaining_pieces[piece] > 0])
+                    action_data = {
+                        'player_id': player_id,
+                        'piece': chosen_piece,
+                        'position': (nx, ny)
+                    }
+                    print(LightAction(action_data))
+                    return LightAction(action_data)
+        return None
+            
+
+
+
 
 
 
