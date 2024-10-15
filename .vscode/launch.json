@@ -13,6 +13,7 @@
             "console": "integratedTerminal",
             "args": [
                 "-t",
+                "local",
                 "my_player_minmax",
                 "random_player_divercite.py"
             ]

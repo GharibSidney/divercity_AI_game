@@ -12,16 +12,17 @@ class minimaxSearch():
         self.id = self.player.get_id()
         # max depth of the tree
         self.depth_max = 1
-        self.counter = 0
+        # self.counter = 0
 
     def minimaxSearch(self, state: GameState, isMax:bool): #player: MyPlayer,
-        self.counter = 0
-        if isMax: v, m = self.maxValue(state)
-        else: v, m = self.minValue(state)
-        return v, m
+        # self.counter = 0
+        if isMax: v, m = self.maxValue(state, 0)
+        else: v, m = self.minValue(state, 0)
+        return m #        return v, m
 
-    def maxValue(self, state: GameState):
-        if self.isTerminal():
+
+    def maxValue(self, state: GameState, counter:int):
+        if self.isTerminal(counter):
             return state.get_next_game_state().scores[self.id] - state.get_next_game_state().scores[self.opponent_id], None
         
         v_star = -1000000
@@ -29,15 +30,17 @@ class minimaxSearch():
 
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action)
-            self.counter += 1
-            v, _ = self.minValue(temporary_state)
+            # self.counter += 1
+            counter += 1
+            v, _ = self.minValue(temporary_state, counter)
             if  v > v_star:
                 v_star = v
                 m_star = action
+            counter -= 1
         return v_star, m_star
 
-    def minValue(self, state: GameState):
-        if self.isTerminal():
+    def minValue(self, state: GameState, counter):
+        if self.isTerminal(counter):
             # the best score is reversed because we are the opponent
             return state.scores[self.opponent_id] - state.scores[self.id], None
         
@@ -45,15 +48,17 @@ class minimaxSearch():
         m_star = None
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action)
-            self.counter += 1
-            v, _ = self.maxValue(temporary_state)
+            # self.counter += 1
+            counter +=1
+            v, _ = self.maxValue(temporary_state, counter)
             if  v < v_star:
                 v_star = v
                 m_star = action
+            counter -=1
         return v_star, m_star
         
-    def isTerminal(self):
-        return self.depth_max == self.counter
+    def isTerminal(self, counter):
+        return self.depth_max == counter #self.counter
 
     def getPossibleActions(self, state: GameState):
         # J'ai mis un fonction dans une fonction, car 
