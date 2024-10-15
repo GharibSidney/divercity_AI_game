@@ -53,11 +53,11 @@ class MyPlayer(PlayerDivercite):
         print(player_cities)
 
 
-        allPossibleDivercities = self.allPossibleDivercities(current_state, self.get_id())
+        allPossibleDivercities = self.get_all_possible_divercities(current_state, self.get_id())
         print(f"voici les divercities possibles de player {self.get_name()} AVANT LE COUP (ca match avec ce qui ya en haut du separateur):")
         print(allPossibleDivercities)
 
-        divercity_action = self.doDivercity(current_state, self.get_id(), allPossibleDivercities)
+        divercity_action = self.do_divercity(current_state, self.get_id(), allPossibleDivercities)
         print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 
         best_action = next(possible_actions)
@@ -72,7 +72,7 @@ class MyPlayer(PlayerDivercite):
             board = current_state.get_rep().get_env()
             return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
     
-    def allPossibleDivercities(self, current_state: GameStateDivercite, player_id: int):
+    def get_all_possible_divercities(self, current_state: GameStateDivercite, player_id: int):
         player_cities = self.get_player_cities(current_state, player_id)
         all_possible_divercities = []
 
@@ -95,7 +95,7 @@ class MyPlayer(PlayerDivercite):
 
         return all_possible_divercities
     
-    def doDivercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
+    def do_divercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
         remaining_pieces = current_state.players_pieces_left.get(player_id, {})
 
         for (x, y), ressource_missings in all_possible_divercities:
