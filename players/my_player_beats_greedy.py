@@ -48,7 +48,7 @@ class MyPlayer(PlayerDivercite):
 
         best_action = next(possible_actions)
         ### TODO essayer de juste le faire une fois et pas à chaque coup!
-        opponent_id = self.get_opponent_id()
+        opponent_id = self.get_opponent_id(current_state)
         ### TODO END
 
         best_score = best_action.get_next_game_state().scores[self.get_id()] - best_action.get_next_game_state().scores[opponent_id]
