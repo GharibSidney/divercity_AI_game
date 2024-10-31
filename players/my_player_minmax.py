@@ -3,7 +3,7 @@ from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
-from minimaxSearch import minimaxSearch
+from old.minimaxSearch import minimaxSearch
 
 class MyPlayer(PlayerDivercite):
     """

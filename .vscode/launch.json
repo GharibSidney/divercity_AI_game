@@ -12,9 +12,9 @@
             "console": "integratedTerminal",
             "args": [
                 "-t",
-                "local",
-                "my_player_minmax",
-                "random_player_divercite.py"
+                "human_vs_computer",
+                "my_player_minmax_diveristy.py",
+                
             ]
         }
     ]

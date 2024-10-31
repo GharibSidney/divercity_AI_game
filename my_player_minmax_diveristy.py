@@ -1,9 +1,13 @@
 from player_divercite import PlayerDivercite
+from typing import List, Tuple
 from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
-from minimaxSearch import minimaxSearch
+from seahorse.game.light_action import LightAction
+from seahorse.game.game_layout.board import Board, Piece
+
+import random
 
 class MyPlayer(PlayerDivercite):
     """
@@ -40,21 +44,32 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-        possible_actions = current_state.generate_possible_heavy_actions()
-        possible_actions_light = current_state.get_possible_light_actions()
+        # possible_actions = current_state.generate_possible_heavy_actions()
+        # possible_actions_light = current_state.get_possible_light_actions()
+        # possible_actions_light = list(possible_actions_light)
+        possible_actions = []
+        possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
+        possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
+
+        for divercity in possible_Divercite_actions:
+            if len(divercity[1]) == 1 : 
+                print('boy')
+                action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
+                if action is not None:
+                    return action
+
+        possible_actions.append(possible_Divercite_actions)
+        possible_actions.append(current_state.generate_possible_heavy_actions())
         isMax = current_state.step%2 == 0
+
         self.depth_max = self.pick_depth_max(isMax)
-        possible_actions_light = list(possible_actions_light)
         self.opponent_id = self.get_opponent_id(current_state)
+
         return self.minimaxSearch(current_state, isMax) #to see if useful
-        best_action = next(possible_actions)
-        ### TODO essayer de juste le faire une fois et pas à chaque coup!
-        opponent_id = self.get_opponent_id()
-        ### TODO END
+
 
 
     def minimaxSearch(self, state: GameState, isMax:bool): #player: MyPlayer,
-        # self.counter = 0
         if isMax: v, m = self.maxValue(state, 0)
         else: v, m = self.minValue(state, 0)
         return m # return v, m
@@ -69,7 +84,6 @@ class MyPlayer(PlayerDivercite):
 
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action)
-            # self.counter += 1
             counter += 1
             v, _ = self.minValue(temporary_state, counter)
             if  v > v_star:
@@ -87,7 +101,6 @@ class MyPlayer(PlayerDivercite):
         m_star = None
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action)
-            # self.counter += 1
             counter +=1
             v, _ = self.maxValue(temporary_state, counter)
             if  v < v_star:
@@ -146,20 +159,20 @@ class MyPlayer(PlayerDivercite):
             if any(count > 1 for count in neighbor_colors_count.values()):
                 continue
 
-            ressource_missings = [color + 'R' for color, count in neighbor_colors_count.items() if count == 0]
-            all_possible_divercities.append(((x, y), ressource_missings))
+            resources_missing = [color + 'R' for color, count in neighbor_colors_count.items() if count == 0]
+            all_possible_divercities.append(((x, y), resources_missing))
 
         return all_possible_divercities
     
     def do_divercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
         remaining_pieces = current_state.players_pieces_left.get(player_id, {})
 
-        for (x, y), ressource_missings in all_possible_divercities:
+        for (x, y), resources_missing in all_possible_divercities:
             neighbours = current_state.get_neighbours(x, y)
 
             for direction, (piece, (nx, ny)) in neighbours.items():
                 if piece == 'EMPTY':
-                    valid_pieces = [p for p in remaining_pieces if p in ressource_missings and remaining_pieces[p] > 0]
+                    valid_pieces = [p for p in remaining_pieces if p in resources_missing and remaining_pieces[p] > 0]
 
                     if valid_pieces:
                         chosen_piece = random.choice(valid_pieces)
@@ -176,12 +189,12 @@ class MyPlayer(PlayerDivercite):
         opponent_id = self.get_opponent_id(current_state)
         my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
         ordered_opponents_all_possible_divercities = sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
-        for (x, y), ressource_missings in ordered_opponents_all_possible_divercities:
+        for (x, y), resources_missing in ordered_opponents_all_possible_divercities:
             neighbours = current_state.get_neighbours(x, y)
 
             for direction, (piece, (nx, ny)) in neighbours.items():
                 if piece == 'EMPTY':
-                    valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in ressource_missings and my_remaining_pieces[p] > 0 and p[1] == 'R']
+                    valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in resources_missing and my_remaining_pieces[p] > 0 and p[1] == 'R']
                     if valid_pieces_destroy_opponent_divercity:
                         chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity)
                         action_data = {
@@ -190,3 +203,7 @@ class MyPlayer(PlayerDivercite):
                             'position': (nx, ny)
                         }
                         return LightAction(action_data)
+                    
+    def sort_divercity(self, divercities: List[Tuple[Tuple[int, int], int]]) -> List[Tuple[Tuple[int, int], int]]:
+        # Sort by the number of missing resources (ascending)
+        return sorted(divercities, key=lambda x: x[1])
