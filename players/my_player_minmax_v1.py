@@ -43,7 +43,7 @@ class MyPlayer(PlayerDivercite):
         possible_actions = current_state.generate_possible_heavy_actions()
         possible_actions_light = current_state.get_possible_light_actions()
         isMax = current_state.step%2==0
-        self.depth_max = self.pick_depth_max(isMax)
+        self.depth_max = self.pick_depth_max(isMax, current_state)
         possible_actions_light = list(possible_actions_light)
         self.opponent_id = self.get_opponent_id(current_state)
         return self.minimaxSearch(current_state, isMax) #to see if useful
@@ -81,19 +81,19 @@ class MyPlayer(PlayerDivercite):
     def minValue(self, state: GameState, counter):
         if self.isTerminal(counter):
             # the best score is reversed because we are the opponent
-            return  state.scores[self.opponent_id]- state.scores[self.id], None
+            return  state.scores[self.opponent_id] - state.scores[self.id], None
         
         v_star = 1000000
         m_star = None
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action)
             # self.counter += 1
-            counter +=1
+            counter += 1
             v, _ = self.maxValue(temporary_state, counter)
             if  v < v_star:
                 v_star = v
                 m_star = action
-            counter -=1
+            counter -= 1
         return v_star, m_star
         
     def isTerminal(self, counter):
@@ -116,5 +116,8 @@ class MyPlayer(PlayerDivercite):
                 opponent_id = players.get_id()
         return opponent_id
     
-    def pick_depth_max(self, isMax:bool):
-        return 2
+    def pick_depth_max(self, isMax:bool, current_state:GameState):
+        if current_state.step > 26:
+            return 4
+        else:
+            return 2
