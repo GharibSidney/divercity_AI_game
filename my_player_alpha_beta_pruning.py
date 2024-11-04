@@ -71,7 +71,7 @@ class MyPlayer(PlayerDivercite):
         return m # return v, m
 
 
-    def maxValue(self, state: GameState, main_action:LightAction, counter:int):
+    def maxValue(self, state: GameState, main_action:LightAction, counter:int, alpha = -1000000, beta = 1000000):
         if self.isTerminal(counter):
             return self.evaluation(main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None
         
@@ -81,14 +81,17 @@ class MyPlayer(PlayerDivercite):
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action, state)
             counter += 1
-            v, _ = self.minValue(temporary_state, action, counter)
+            v, _ = self.minValue(temporary_state, action, counter, alpha, beta)
             if  v > v_star:
                 v_star = v
                 m_star = action
+                alpha = max(v_star, alpha)
+            if alpha >= beta:
+                return v_star, m_star
             counter -= 1
         return v_star, m_star
 
-    def minValue(self, state: GameState, main_action:LightAction, counter):
+    def minValue(self, state: GameState, main_action:LightAction, counter: int, alpha = -1000000, beta = 1000000):
         if self.isTerminal(counter):
             # the best score is reversed because we are the opponent
             return  self.evaluation(main_action, state.scores[self.opponent_id] - state.scores[self.get_id()]), None
@@ -102,7 +105,10 @@ class MyPlayer(PlayerDivercite):
             if  v < v_star:
                 v_star = v
                 m_star = action
+                beta = min(v_star, beta)
             counter -=1
+            if v_star <= alpha:
+                return v_star, m_star
         return v_star, m_star
         
     def isTerminal(self, counter):
@@ -126,14 +132,12 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, isMax:bool, current_state:GameState):
-        if current_state.step < 16:
+        if current_state.step < 32:
             return 2
-        elif current_state.step < 20 :
-            return 3
-        elif current_state.step < 30 :
+        elif current_state.step < 38:
             return 4
         else:
-            return 5
+           return 2
     
 
 ################ Divercity part ################
@@ -215,7 +219,7 @@ class MyPlayer(PlayerDivercite):
 ################ Heuristic part ################
 
     def evaluation(self, action: LightAction, score:int) -> int:
-        return score + 10 * self.is_city_placement(action)
+        return score + 2 * self.is_city_placement(action)
 
     def is_city_placement(self, action: LightAction):
         # if city then return True else False

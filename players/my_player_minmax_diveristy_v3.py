@@ -27,8 +27,6 @@ class MyPlayer(PlayerDivercite):
             time_limit (float, optional): the time limit in (s)
         """
         super().__init__(piece_type, name)
-        
-        self.depth_max = 2
 
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
@@ -44,7 +42,7 @@ class MyPlayer(PlayerDivercite):
         # possible_actions = current_state.generate_possible_heavy_actions()
         # possible_actions_light = current_state.get_possible_light_actions()
         # possible_actions_light = list(possible_actions_light)
-        possible_actions = []
+        # possible_actions = []
         possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
         possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
 
@@ -55,8 +53,8 @@ class MyPlayer(PlayerDivercite):
                 if action is not None:
                     return action
 
-        possible_actions.append(possible_Divercite_actions)
-        possible_actions.append(current_state.generate_possible_heavy_actions())
+        # possible_actions.append(possible_Divercite_actions)
+        # possible_actions.append(current_state.generate_possible_heavy_actions())
         isMax = current_state.step%2 == 0
 
         self.depth_max = self.pick_depth_max(isMax, current_state)
@@ -69,38 +67,38 @@ class MyPlayer(PlayerDivercite):
     def minimaxSearch(self, state: GameState, isMax:bool): #player: MyPlayer,
         # if isMax: v, m = self.maxValue(state, 0)
         # else: v, m = self.minValue(state, 0)
-        v, m = self.maxValue(state, 0)
+        v, m = self.maxValue(state, None, 0)
         return m # return v, m
 
 
-    def maxValue(self, state: GameState, counter:int):
+    def maxValue(self, state: GameState, main_action:LightAction, counter:int):
         if self.isTerminal(counter):
-            return  state.scores[self.get_id()] - state.scores[self.opponent_id], None
+            return self.evaluation(main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None
         
         v_star = -1000000
         m_star = None
 
         for action in self.getPossibleActions(state):
-            temporary_state = self.transition(action)
+            temporary_state = self.transition(action, state)
             counter += 1
-            v, _ = self.minValue(temporary_state, counter)
+            v, _ = self.minValue(temporary_state, action, counter)
             if  v > v_star:
                 v_star = v
                 m_star = action
             counter -= 1
         return v_star, m_star
 
-    def minValue(self, state: GameState, counter):
+    def minValue(self, state: GameState, main_action:LightAction, counter):
         if self.isTerminal(counter):
             # the best score is reversed because we are the opponent
-            return   state.scores[self.id] - state.scores[self.opponent_id], None
+            return  self.evaluation(main_action, state.scores[self.opponent_id] - state.scores[self.get_id()]), None
         
         v_star = 1000000
         m_star = None
         for action in self.getPossibleActions(state):
-            temporary_state = self.transition(action)
+            temporary_state = self.transition(action, state)
             counter +=1
-            v, _ = self.maxValue(temporary_state, counter)
+            v, _ = self.maxValue(temporary_state, action, counter)
             if  v < v_star:
                 v_star = v
                 m_star = action
@@ -114,11 +112,11 @@ class MyPlayer(PlayerDivercite):
         # J'ai mis un fonction dans une fonction, car 
         # si jamais on veut changer pour light action
         # on aura qu'à changer le return 
-        return state.generate_possible_heavy_actions()
+        return state.generate_possible_light_actions()
 
-    def transition(self, action: Action):
+    def transition(self, action: Action, state: GameState):
         
-        return action.get_next_game_state()
+        return action.get_heavy_action(state).get_next_game_state()
     
     def get_opponent_id(self, current_state:GameState):
         opponent_id = 0
@@ -128,14 +126,14 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, isMax:bool, current_state:GameState):
-        if current_state.step < 26:
-            return 2
-        # elif current_state.step < 16 :
+        # if current_state.step < 16:
+        return 2
+        # elif current_state.step < 20 :
         #     return 3
-        # elif current_state.step < 26 :
+        # elif current_state.step < 30 :
         #     return 4
-        else:
-            return 2
+        # else:
+        #     return 2
     
 
 ################ Divercity part ################
@@ -214,3 +212,11 @@ class MyPlayer(PlayerDivercite):
         return sorted(divercities, key=lambda x: x[1])
 
 
+################ Heuristic part ################
+
+    def evaluation(self, action: LightAction, score:int) -> int:
+        return score + 2 * self.is_city_placement(action)
+
+    def is_city_placement(self, action: LightAction):
+        # if city then return True else False
+        return action.data['piece'][1] == 'C'

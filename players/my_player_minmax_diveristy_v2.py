@@ -135,7 +135,7 @@ class MyPlayer(PlayerDivercite):
         # elif current_state.step < 26 :
         #     return 4
         else:
-            return 4
+            return 2
     
 
 ################ Divercity part ################
