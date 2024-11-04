@@ -132,12 +132,12 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, isMax:bool, current_state:GameState):
-        if current_state.step < 32:
+        if current_state.step < 26:
             return 2
-        elif current_state.step < 38:
-            return 4
+        elif current_state.step < 30:
+            return  3 #40 - current_state.step
         else:
-           return 2
+           return 40 - current_state.step
     
 
 ################ Divercity part ################
@@ -224,3 +224,25 @@ class MyPlayer(PlayerDivercite):
     def is_city_placement(self, action: LightAction):
         # if city then return True else False
         return action.data['piece'][1] == 'C'
+    
+
+################# Helper functions #################
+
+    def unique_pieces_and_city_count(self, current_state: GameStateDivercite):
+        # I need to know how many different type  pieces I have left and how many different pieces my opponent has left
+        # I need to know how many different type cities I have and how many cities my opponent has
+        count_my_pieces_left = 0
+        count_opponent_pieces_left = 0
+
+        my_remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {})
+        for p in my_remaining_pieces:
+            print(p, my_remaining_pieces[p])
+            if my_remaining_pieces[p] > 0:
+                count_my_pieces_left += 1
+        opponent_remaining_pieces = current_state.players_pieces_left.get(self.opponent_id, {})
+
+        for p in opponent_remaining_pieces:
+            print(p, opponent_remaining_pieces[p])
+            if opponent_remaining_pieces[p] > 0:
+                count_opponent_pieces_left += 1
+        return count_my_pieces_left, count_opponent_pieces_left

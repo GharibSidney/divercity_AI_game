@@ -228,5 +228,3 @@ class MyPlayer(PlayerDivercite):
     
 
 
-
-################# Helper functions #################
