@@ -53,9 +53,6 @@ class MyPlayer(PlayerDivercite):
 
         possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
         possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
-        action = self.place_cities(current_state)
-        if action is not None:
-            return action
 
         for divercity in possible_Divercite_actions:
             if len(divercity[1]) == 1 : 
@@ -63,6 +60,16 @@ class MyPlayer(PlayerDivercite):
                 action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
                 if action is not None:
                     return action
+                
+        action = self.prevent_opponent_divercity(current_state, self.get_id())
+        if action is not None:
+            return action
+        
+        action = self.place_cities(current_state)
+        if action is not None:
+            return action
+
+
 
         isMax = current_state.step%2 == 0
 
@@ -82,7 +89,7 @@ class MyPlayer(PlayerDivercite):
 
     def maxValue(self, state: GameState, main_action:LightAction, counter:int, alpha = -1000000, beta = 1000000):
         if self.isTerminal(counter):
-            return self.evaluation(main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None
+            return self.evaluation(state,main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None
         
         v_star = -1000000
         m_star = None
@@ -103,7 +110,7 @@ class MyPlayer(PlayerDivercite):
     def minValue(self, state: GameState, main_action:LightAction, counter: int, alpha = -1000000, beta = 1000000):
         if self.isTerminal(counter):
             # the best score is reversed because we are the opponent
-            return  self.evaluation(main_action, state.scores[self.opponent_id] - state.scores[self.get_id()]), None
+            return  self.evaluation(state, main_action, state.scores[self.opponent_id] - state.scores[self.get_id()]), None
         
         v_star = 1000000
         m_star = None
@@ -145,7 +152,7 @@ class MyPlayer(PlayerDivercite):
             return 2
         elif current_state.step < 30:
             self.place_cities(current_state)
-            return  3 #40 - current_state.step
+            return  4 #40 - current_state.step
         else:
            return 40 - current_state.step
     
@@ -157,6 +164,7 @@ class MyPlayer(PlayerDivercite):
     def get_player_cities(self, current_state: GameStateDivercite, player_id: int):
             board = current_state.get_rep().get_env()
             return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
+    
     def get_player_cities_with_piece(self, current_state: GameStateDivercite, player_id: int):
         board = current_state.get_rep().get_env()
         return [[(i, j),piece] for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
@@ -195,7 +203,7 @@ class MyPlayer(PlayerDivercite):
                     valid_pieces = [p for p in remaining_pieces if p in resources_missing and remaining_pieces[p] > 0]
 
                     if valid_pieces:
-                        chosen_piece = random.choice(valid_pieces)
+                        chosen_piece = random.choice(valid_pieces) #TODO to change to make sure to pick most available resource
                         action_data = {
                             'player_id': player_id,
                             'piece': chosen_piece,
@@ -208,21 +216,26 @@ class MyPlayer(PlayerDivercite):
     def prevent_opponent_divercity(self, current_state: GameStateDivercite, my_player_id: int):
         opponent_id = self.get_opponent_id(current_state)
         my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
-        ordered_opponents_all_possible_divercities = sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
-        for (x, y), resources_missing in ordered_opponents_all_possible_divercities:
+        # TODO No need for sorting because I only need to prevent the opponent from getting a divercity when a single resource missing
+        ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) #sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
+        single_resource_left_divercities = [divercity for divercity in ordered_opponents_all_possible_divercities if len(divercity[1]) == 1]
+        # I only need to prevent the opponent from getting a divercity when a single resource missing
+        for (x, y), resources_missing in single_resource_left_divercities:
+
             neighbours = current_state.get_neighbours(x, y)
 
             for direction, (piece, (nx, ny)) in neighbours.items():
                 if piece == 'EMPTY':
                     valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in resources_missing and my_remaining_pieces[p] > 0 and p[1] == 'R']
                     if valid_pieces_destroy_opponent_divercity:
-                        chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity)
+                        chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity) #TODO to change to make sure not to give a point to the opponent
                         action_data = {
                             'player_id': my_player_id,
                             'piece': chosen_piece,
                             'position': (nx, ny)
                         }
                         return LightAction(action_data)
+        return None
                     
     def sort_divercity(self, divercities: List[Tuple[Tuple[int, int], int]]) -> List[Tuple[Tuple[int, int], int]]:
         # Sort by the number of missing resources (ascending)
@@ -231,12 +244,23 @@ class MyPlayer(PlayerDivercite):
 
 ################ Heuristic part ################
 
-    def evaluation(self, action: LightAction, score:int) -> int:
-        return score + 2 * self.is_city_placement(action)
+    def evaluation(self, state:GameStateDivercite, action: LightAction, score:int) -> int:
+        return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action)
 
     def is_city_placement(self, action: LightAction):
         # if city then return True else False
         return action.data['piece'][1] == 'C'
+    
+    def max_available_resource(self, state:GameStateDivercite, action: LightAction):
+        if action.data['piece'][1] == 'R':
+            remaining_pieces = state.players_pieces_left.get(self.get_id(), {})
+            for resource in remaining_pieces:
+                # print(action.data['piece'][:2])
+                if action.data['piece'][:2] == resource:
+                    # print(remaining_pieces[resource])
+                    return remaining_pieces[resource]
+        else:
+            return 0
     
 
 ################# Helper functions #################
@@ -279,7 +303,7 @@ class MyPlayer(PlayerDivercite):
         return neighbors
     
 ################# Table of actions #################
-    #TODO prioritize city on top of each other
+    #ULTIMATE TODO prioritize city close to each other, opponent cities
     def place_cities(self, current_state: GameStateDivercite):
         # Focuses on placing same color cities next to each others
         already_place_city = self.get_player_cities_with_piece(current_state, self.get_id())
@@ -288,6 +312,17 @@ class MyPlayer(PlayerDivercite):
         if len(already_place_city) == 8:
             # all cities are placed
             return None
+        opponent_cities = self.get_player_cities_with_piece(current_state, self.get_opponent_id(current_state))
+        
+        if opponent_cities:
+            for (x, y), city in opponent_cities:
+                city_color = city.piece_type[:2]
+                neighbours = self.get_neighboring_cities(x, y) #TODO try to put cities near the middle
+                for (nx, ny) in neighbours:
+                    for action in self.getPossibleActions(current_state):
+                        # I had to flip the x and y because the position is in (y, x) and not (x, y)
+                        if (ny, nx) == action.data['position'] and action.data['piece'] == city_color:
+                            return action
         
         if already_place_city:
             for (x, y), city in already_place_city: #city.piece_type = 'RCW'
