@@ -116,7 +116,7 @@ class MyPlayer(PlayerDivercite):
         m_star = None
         for action in self.getPossibleActions(state):
             temporary_state = self.transition(action, state)
-            counter +=1
+            counter += 1
             v, _ = self.maxValue(temporary_state, action, counter)
             if  v < v_star:
                 v_star = v
@@ -203,7 +203,9 @@ class MyPlayer(PlayerDivercite):
                     valid_pieces = [p for p in remaining_pieces if p in resources_missing and remaining_pieces[p] > 0]
 
                     if valid_pieces:
-                        chosen_piece = random.choice(valid_pieces) #TODO to change to make sure to pick most available resource
+                        chosen_piece = self.chose_most_available_resource(current_state, valid_pieces)
+                        if chosen_piece is None:
+                            chosen_piece = random.choice(valid_pieces) #TODO to change to make sure to pick most available resource
                         action_data = {
                             'player_id': player_id,
                             'piece': chosen_piece,
@@ -216,7 +218,6 @@ class MyPlayer(PlayerDivercite):
     def prevent_opponent_divercity(self, current_state: GameStateDivercite, my_player_id: int):
         opponent_id = self.get_opponent_id(current_state)
         my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
-        # TODO No need for sorting because I only need to prevent the opponent from getting a divercity when a single resource missing
         ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) #sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
         single_resource_left_divercities = [divercity for divercity in ordered_opponents_all_possible_divercities if len(divercity[1]) == 1]
         # I only need to prevent the opponent from getting a divercity when a single resource missing
@@ -228,7 +229,7 @@ class MyPlayer(PlayerDivercite):
                 if piece == 'EMPTY':
                     valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in resources_missing and my_remaining_pieces[p] > 0 and p[1] == 'R']
                     if valid_pieces_destroy_opponent_divercity:
-                        chosen_piece = self.choose_most_available_resource(current_state, valid_pieces_destroy_opponent_divercity, city_piece)
+                        chosen_piece = self.choose_most_available_resource_and_no_points(current_state, valid_pieces_destroy_opponent_divercity, city_piece)
                         if chosen_piece is None:
                             chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity)
                         action_data = {
@@ -257,9 +258,9 @@ class MyPlayer(PlayerDivercite):
         if action.data['piece'][1] == 'R':
             remaining_pieces = state.players_pieces_left.get(self.get_id(), {})
             for resource in remaining_pieces:
-                # print(action.data['piece'][:2])
+                # if the resource is the same as the action piece
                 if action.data['piece'][:2] == resource:
-                    # print(remaining_pieces[resource])
+                    # return the number of remaining pieces for that resource
                     return remaining_pieces[resource]
         else:
             return 0
@@ -304,15 +305,29 @@ class MyPlayer(PlayerDivercite):
         
         return neighbors
     
-    def choose_most_available_resource(self, current_state: GameStateDivercite, valid_pieces_destroy_opponent_divercity: List[str], city_piece: Piece):
+    def choose_most_available_resource_and_no_points(self, current_state: GameStateDivercite, valid_pieces_destroy_opponent_divercity: List[str], city_piece: Piece):
         # I want to prioritize the resource that is most available and that will not give a point to the opponent
         my_remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {})
         city_color = city_piece.piece_type[:1]
+        # Initialize the resource to choose and the amount left
         resource_to_choose = None
         amount_left = 0
+
         for resource in valid_pieces_destroy_opponent_divercity:
             # it will prevent a diverity and it will not give a point to the opponent
             if resource != city_color + 'R' and my_remaining_pieces[resource] > amount_left:
+                amount_left = my_remaining_pieces[resource]
+                resource_to_choose = resource
+        return resource_to_choose
+    
+    def chose_most_available_resource(self, current_state: GameStateDivercite, valid_pieces : List[str]):
+        # I want to prioritize the resource that is most available
+        my_remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {})
+        resource_to_choose = None
+        amount_left = 0
+
+        for resource in valid_pieces:
+            if my_remaining_pieces[resource] > amount_left:
                 amount_left = my_remaining_pieces[resource]
                 resource_to_choose = resource
         return resource_to_choose
@@ -332,7 +347,7 @@ class MyPlayer(PlayerDivercite):
         if opponent_cities:
             for (x, y), city in opponent_cities:
                 city_color = city.piece_type[:2]
-                neighbours = self.get_neighboring_cities(x, y) #TODO try to put cities near the middle
+                neighbours = self.get_neighboring_cities(x, y)
                 for (nx, ny) in neighbours:
                     for action in self.getPossibleActions(current_state):
                         # I had to flip the x and y because the position is in (y, x) and not (x, y)
@@ -343,7 +358,7 @@ class MyPlayer(PlayerDivercite):
             for (x, y), city in already_place_city: #city.piece_type = 'RCW'
                 city_color = city.piece_type[:2]
                 if remaining_pieces[city_color] == 1:
-                    neighbours = self.get_neighboring_cities(x, y) #TODO to fix
+                    neighbours = self.get_neighboring_cities(x, y)
                     for (nx, ny) in neighbours:
                         for action in self.getPossibleActions(current_state):
                             # I had to flip the x and y because the position is in (y, x) and not (x, y)
