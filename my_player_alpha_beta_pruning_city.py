@@ -167,13 +167,13 @@ class MyPlayer(PlayerDivercite):
     
     def get_player_cities_with_piece(self, current_state: GameStateDivercite, player_id: int):
         board = current_state.get_rep().get_env()
-        return [[(i, j),piece] for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
+        return [[(i, j), piece] for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
     
     def get_all_possible_divercities(self, current_state: GameStateDivercite, player_id: int):
-        player_cities = self.get_player_cities(current_state, player_id)
+        player_cities = self.get_player_cities_with_piece(current_state, player_id)
         all_possible_divercities = []
 
-        for x, y in player_cities:
+        for (x, y), city_piece in player_cities:
             if current_state.check_divercite([x, y]):
                 continue
             
@@ -188,14 +188,14 @@ class MyPlayer(PlayerDivercite):
                 continue
 
             resources_missing = [color + 'R' for color, count in neighbor_colors_count.items() if count == 0]
-            all_possible_divercities.append(((x, y), resources_missing))
-
+            all_possible_divercities.append(((x, y), resources_missing, city_piece))
+            
         return all_possible_divercities
     
-    def do_divercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int]]):
+    def do_divercity(self, current_state: GameStateDivercite, player_id: int, all_possible_divercities: List[Tuple[Tuple[int, int], int, any]]):
         remaining_pieces = current_state.players_pieces_left.get(player_id, {})
 
-        for (x, y), resources_missing in all_possible_divercities:
+        for (x, y), resources_missing, _ in all_possible_divercities:
             neighbours = current_state.get_neighbours(x, y)
 
             for direction, (piece, (nx, ny)) in neighbours.items():
@@ -220,7 +220,7 @@ class MyPlayer(PlayerDivercite):
         ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) #sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
         single_resource_left_divercities = [divercity for divercity in ordered_opponents_all_possible_divercities if len(divercity[1]) == 1]
         # I only need to prevent the opponent from getting a divercity when a single resource missing
-        for (x, y), resources_missing in single_resource_left_divercities:
+        for (x, y), resources_missing, city_piece in single_resource_left_divercities:
 
             neighbours = current_state.get_neighbours(x, y)
 
@@ -228,7 +228,9 @@ class MyPlayer(PlayerDivercite):
                 if piece == 'EMPTY':
                     valid_pieces_destroy_opponent_divercity = [p for p in my_remaining_pieces if p not in resources_missing and my_remaining_pieces[p] > 0 and p[1] == 'R']
                     if valid_pieces_destroy_opponent_divercity:
-                        chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity) #TODO to change to make sure not to give a point to the opponent
+                        chosen_piece = self.choose_most_available_resource(current_state, valid_pieces_destroy_opponent_divercity, city_piece)
+                        if chosen_piece is None:
+                            chosen_piece = random.choice(valid_pieces_destroy_opponent_divercity)
                         action_data = {
                             'player_id': my_player_id,
                             'piece': chosen_piece,
@@ -301,6 +303,19 @@ class MyPlayer(PlayerDivercite):
                     neighbors.append((new_col,new_row))
         
         return neighbors
+    
+    def choose_most_available_resource(self, current_state: GameStateDivercite, valid_pieces_destroy_opponent_divercity: List[str], city_piece: Piece):
+        # I want to prioritize the resource that is most available and that will not give a point to the opponent
+        my_remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {})
+        city_color = city_piece.piece_type[:1]
+        resource_to_choose = None
+        amount_left = 0
+        for resource in valid_pieces_destroy_opponent_divercity:
+            # it will prevent a diverity and it will not give a point to the opponent
+            if resource != city_color + 'R' and my_remaining_pieces[resource] > amount_left:
+                amount_left = my_remaining_pieces[resource]
+                resource_to_choose = resource
+        return resource_to_choose
     
 ################# Table of actions #################
     #ULTIMATE TODO prioritize city close to each other, opponent cities

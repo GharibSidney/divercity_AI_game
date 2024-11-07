@@ -217,7 +217,7 @@ class MyPlayer(PlayerDivercite):
         opponent_id = self.get_opponent_id(current_state)
         my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
         # TODO No need for sorting because I only need to prevent the opponent from getting a divercity when a single resource missing
-        ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) #sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
+        ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) 
         single_resource_left_divercities = [divercity for divercity in ordered_opponents_all_possible_divercities if len(divercity[1]) == 1]
         # I only need to prevent the opponent from getting a divercity when a single resource missing
         for (x, y), resources_missing in single_resource_left_divercities:
@@ -296,7 +296,6 @@ class MyPlayer(PlayerDivercite):
             # Ensure the new position is within the board boundaries
             if 0 <= new_row < len(self.board) and 0 <= new_col < len(self.board[0]):
                 # Check if the cell is a city ('C')
-                print(self.board[new_col][new_row])
                 if self.board[new_col][new_row] == 'C':
                     neighbors.append((new_col,new_row))
         
