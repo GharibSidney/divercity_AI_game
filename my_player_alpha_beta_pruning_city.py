@@ -253,45 +253,45 @@ class MyPlayer(PlayerDivercite):
     def evaluation(self, state:GameStateDivercite, action: LightAction, score:int) -> int:
         return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action) + self.resource_placement(state, action)
 
-    def resource_placement(self, state:GameStateDivercite, action: LightAction):
-        # Mettre une pièce de sorte à maximiser nos points et empêcher une éventuelle diversité de l'adversaire où il lui manque 2 pièces et nous on met une pièce qu'il avait pas, et qu'il fait juste mettre la dernière ressource 
-        if self.is_resource_placement(action):
-            # TRES IMPORTANT: n'oublie pas que le state que tu vois ne concordes pas avec le state ici, car ici c'est un state vraiment avance en raison d'un depth plus profond avec minmax
-            neighbours = state.get_neighbours(action.data["position"][0], action.data["position"][1])
-            opponent_neighbours_cities = []
-            for _, (piece, coords) in neighbours.items():
-                if isinstance(piece, Piece) and piece.piece_type[1] == 'C' and piece.get_owner_id() == self.opponent_id:
-                    opponent_neighbours_cities.append((piece, coords))
-
-            all_opponent_divercity = self.get_all_possible_divercities(state, self.opponent_id)
-            opponent_cities_and_their_resources_missings_near_placed_resource = []
-
-            for city in opponent_neighbours_cities:
-                if len(all_opponent_divercity) > 0 and city[1] in all_opponent_divercity[0][0]:
-                    opponent_cities_and_their_resources_missings_near_placed_resource.append((city, all_opponent_divercity[0][1]))
-            
-            player_stub = myPlayerStub(self.get_id(), self.get_piece_type())
-            piece_type = action.data["piece"] + player_stub.get_color()
-            # Place de facon fictive la resource que tu voulais mettre ici pour voir si tu donnes une divercité à l'adversaire avec ton mouvement
-            state.rep.env[action.data["position"][0], action.data["position"][1]] = Piece(piece_type, player_stub)
-
-            all_opponent_divercity_future_state = self.get_all_possible_divercities(state, self.opponent_id)
-            opponent_cities_and_their_resources_missings_near_placed_resource_future_state = []
-
-            for city in opponent_neighbours_cities:
-                if len(all_opponent_divercity_future_state) > 0 and city[1] in all_opponent_divercity_future_state[0][0]:
-                    opponent_cities_and_their_resources_missings_near_placed_resource_future_state.append((city, all_opponent_divercity_future_state[0][1]))
-
-            for _, resources_missing_future_state in opponent_cities_and_their_resources_missings_near_placed_resource_future_state:
-                for _, ressources_missings in opponent_cities_and_their_resources_missings_near_placed_resource:
-                    if len(resources_missing_future_state) == 1 and len(resources_missing_future_state) < len(ressources_missings):
-                        return 0
-
-            return 1
-            #TODO: # Place de facon fictive la resource que tu voulais mettre ici pour voir si tu donnes un point a l'adversaire
-            
-        else:
+    def resource_placement(self, state: GameStateDivercite, action: LightAction):
+        # Place a piece in such a way as to maximize our points and prevent a potential divercity for the opponent when they are missing 2 pieces and we place a piece that they didn’t have, so they only need to place a final resource to complete their divercity
+        if not self.is_resource_placement(action):
             return 0
+
+        # Identify neighboring opponent cities to new placed resource
+        neighbors = state.get_neighbours(action.data["position"][0], action.data["position"][1])
+        opponent_neighboring_cities = []
+        for _, (piece, coordinates) in neighbors.items():
+            if isinstance(piece, Piece) and piece.piece_type[1] == 'C' and piece.get_owner_id() == self.opponent_id:
+                opponent_neighboring_cities.append((piece, coordinates))
+
+        opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
+        opponent_cities_with_missing_resources = []
+
+        for city_piece, city_coords in opponent_neighboring_cities:
+            if len(opponent_divercity_opportunities) > 0 and city_coords in opponent_divercity_opportunities[0][0]:
+                opponent_cities_with_missing_resources.append((city_piece, opponent_divercity_opportunities[0][1]))
+
+        # Simulate placing the resource
+        player_stub = myPlayerStub(self.get_id(), self.get_piece_type())
+        piece_type = action.data["piece"] + player_stub.get_color()
+        state.rep.env[action.data["position"][0], action.data["position"][1]] = Piece(piece_type, player_stub)
+
+        # Check future opponent divercity opportunities after placing the resource
+        future_opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
+        future_opponent_cities_with_missing_resources = []
+
+        for city_piece, city_coords in opponent_neighboring_cities:
+            if len(future_opponent_divercity_opportunities) > 0 and city_coords in future_opponent_divercity_opportunities[0][0]:
+                future_opponent_cities_with_missing_resources.append((city_piece, future_opponent_divercity_opportunities[0][1]))
+
+        for _, future_missing_resources in future_opponent_cities_with_missing_resources:
+            for _, current_missing_resources in opponent_cities_with_missing_resources:
+                if len(future_missing_resources) == 1 and len(future_missing_resources) < len(current_missing_resources):
+                    return 0
+
+        return 1  
+
 
     def is_city_placement(self, action: LightAction):
         # if city then return True else False
