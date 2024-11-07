@@ -1,3 +1,4 @@
+import seahorse
 from player_divercite import PlayerDivercite
 from typing import List, Tuple
 from seahorse.game.action import Action
@@ -54,6 +55,10 @@ class MyPlayer(PlayerDivercite):
         possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
         possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
 
+        player_cities = self.get_player_cities(current_state, self.get_id())
+        print(f"voici les villes de player {self.get_name()} AVANT LE COUP (ca match avec ce qui ya en haut du separateur):")
+        print(player_cities)
+
         for divercity in possible_Divercite_actions:
             if len(divercity[1]) == 1 : 
                 print('boy')
@@ -76,6 +81,7 @@ class MyPlayer(PlayerDivercite):
         self.depth_max = self.pick_depth_max(isMax, current_state)
         self.opponent_id = self.get_opponent_id(current_state)
 
+        print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
         return self.minimaxSearch(current_state, isMax)
 
 ################ Minmax part ################
@@ -188,7 +194,7 @@ class MyPlayer(PlayerDivercite):
                 continue
 
             resources_missing = [color + 'R' for color, count in neighbor_colors_count.items() if count == 0]
-            all_possible_divercities.append(((x, y), resources_missing))
+            all_possible_divercities.append (((x, y), resources_missing))
 
         return all_possible_divercities
     
@@ -245,11 +251,55 @@ class MyPlayer(PlayerDivercite):
 ################ Heuristic part ################
 
     def evaluation(self, state:GameStateDivercite, action: LightAction, score:int) -> int:
-        return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action)
+        return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action) + self.resource_placement(state, action)
+
+    def resource_placement(self, state:GameStateDivercite, action: LightAction):
+        # Mettre une pièce de sorte à maximiser nos points et empêcher une éventuelle diversité de l'adversaire où il lui manque 2 pièces et nous on met une pièce qu'il avait pas, et qu'il fait juste mettre la dernière ressource 
+        if self.is_resource_placement(action):
+            # TRES IMPORTANT: n'oublie pas que le state que tu vois ne concordes pas avec le state ici, car ici c'est un state vraiment avance en raison d'un depth plus profond avec minmax
+            neighbours = state.get_neighbours(action.data["position"][0], action.data["position"][1])
+            opponent_neighbours_cities = []
+            for _, (piece, coords) in neighbours.items():
+                if isinstance(piece, Piece) and piece.piece_type[1] == 'C' and piece.get_owner_id() == self.opponent_id:
+                    opponent_neighbours_cities.append((piece, coords))
+
+            all_opponent_divercity = self.get_all_possible_divercities(state, self.opponent_id)
+            opponent_cities_and_their_resources_missings_near_placed_resource = []
+
+            for city in opponent_neighbours_cities:
+                if len(all_opponent_divercity) > 0 and city[1] in all_opponent_divercity[0][0]:
+                    opponent_cities_and_their_resources_missings_near_placed_resource.append((city, all_opponent_divercity[0][1]))
+            
+            player_stub = myPlayerStub(self.get_id(), self.get_piece_type())
+            piece_type = action.data["piece"] + player_stub.get_color()
+            # Place de facon fictive la resource que tu voulais mettre ici pour voir si tu donnes une divercité à l'adversaire avec ton mouvement
+            state.rep.env[action.data["position"][0], action.data["position"][1]] = Piece(piece_type, player_stub)
+
+            all_opponent_divercity_future_state = self.get_all_possible_divercities(state, self.opponent_id)
+            opponent_cities_and_their_resources_missings_near_placed_resource_future_state = []
+
+            for city in opponent_neighbours_cities:
+                if len(all_opponent_divercity_future_state) > 0 and city[1] in all_opponent_divercity_future_state[0][0]:
+                    opponent_cities_and_their_resources_missings_near_placed_resource_future_state.append((city, all_opponent_divercity_future_state[0][1]))
+
+            for _, resources_missing_future_state in opponent_cities_and_their_resources_missings_near_placed_resource_future_state:
+                for _, ressources_missings in opponent_cities_and_their_resources_missings_near_placed_resource:
+                    if len(resources_missing_future_state) == 1 and len(resources_missing_future_state) < len(ressources_missings):
+                        return 0
+
+            return 1
+            #TODO: # Place de facon fictive la resource que tu voulais mettre ici pour voir si tu donnes un point a l'adversaire
+            
+        else:
+            return 0
 
     def is_city_placement(self, action: LightAction):
         # if city then return True else False
         return action.data['piece'][1] == 'C'
+    
+    def is_resource_placement(self, action: LightAction):
+        # if resource then return True else False
+        return action.data['piece'][1] == 'R'
     
     def max_available_resource(self, state:GameStateDivercite, action: LightAction):
         if action.data['piece'][1] == 'R':
@@ -347,4 +397,14 @@ class MyPlayer(PlayerDivercite):
                 return action
             
         return None
-        
+
+class myPlayerStub:
+    def __init__(self, player_id, player_color):
+        self.player_id = player_id
+        self.color = player_color
+
+    def get_id(self):
+        return self.player_id
+    
+    def get_color(self):
+        return self.color
