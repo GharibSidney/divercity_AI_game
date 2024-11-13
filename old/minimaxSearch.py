@@ -1,7 +1,7 @@
 from seahorse.game.action import Action
 from seahorse.game.game_state import GameState
 # éventuellement modifier le prochain import
-from my_player import  MyPlayer 
+from my_player_base import  MyPlayer 
 
 
 class minimaxSearch():
