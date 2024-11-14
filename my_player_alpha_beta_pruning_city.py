@@ -52,27 +52,27 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
-        possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
+        # possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
+        # possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
 
         player_cities = self.get_player_cities(current_state, self.get_id())
         print(f"voici les villes de player {self.get_name()} AVANT LE COUP (ca match avec ce qui ya en haut du separateur):")
-        print(player_cities)
+        # print(player_cities)
 
-        for divercity in possible_Divercite_actions:
-            if len(divercity[1]) == 1 : 
-                print('boy')
-                action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
-                if action is not None:
-                    return action
+        # for divercity in possible_Divercite_actions:
+        #     if len(divercity[1]) == 1 : 
+        #         print('boy')
+        #         action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
+        #         if action is not None:
+        #             return action
                 
-        action = self.prevent_opponent_divercity(current_state, self.get_id())
-        if action is not None:
-            return action
+        # action = self.prevent_opponent_divercity(current_state, self.get_id())
+        # if action is not None:
+        #     return action
         
-        action = self.place_cities(current_state)
-        if action is not None:
-            return action
+        # action = self.place_cities(current_state)
+        # if action is not None:
+        #     return action
 
 
 
@@ -154,13 +154,14 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, isMax:bool, current_state:GameState):
-        if current_state.step < 26:
-            return 2
-        elif current_state.step < 30:
-            self.place_cities(current_state)
-            return  4 #40 - current_state.step
-        else:
-           return 40 - current_state.step
+        # if current_state.step < 26:
+        #     return 2
+        # elif current_state.step < 30:
+        #     self.place_cities(current_state)
+        #     return  4 #40 - current_state.step
+        # else:
+        #    return 40 - current_state.step
+        return 2
     
 
 ################ Divercity part ################
@@ -168,6 +169,7 @@ class MyPlayer(PlayerDivercite):
 
 
     def get_player_cities(self, current_state: GameStateDivercite, player_id: int):
+            current_state.players_pieces_left.get(player_id, {})
             board = current_state.get_rep().get_env()
             return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
     
@@ -251,46 +253,65 @@ class MyPlayer(PlayerDivercite):
 ################ Heuristic part ################
 
     def evaluation(self, state:GameStateDivercite, action: LightAction, score:int) -> int:
-        return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action) + self.resource_placement(state, action)
+        # return score + 2 * self.is_city_placement(action) + self.max_available_resource(state, action) + self.resource_placement(state, action)
+        return score + self.resource_placement(state, action)
 
     def resource_placement(self, state: GameStateDivercite, action: LightAction):
-        # Place a piece in such a way as to maximize our points and prevent a potential divercity for the opponent when they are missing 2 pieces and we place a piece that they didn’t have, so they only need to place a final resource to complete their divercity
-        if not self.is_resource_placement(action):
+        try:
+            # Place a piece in such a way as to maximize our points and prevent a potential divercity for the opponent when they are missing 2 pieces and we place a piece that they didn’t have, so they only need to place a final resource to complete their divercity
+            if not self.is_resource_placement(action):
+                return 0
+
+            # Identify neighboring opponent cities to new placed resource
+            neighbors = state.get_neighbours(action.data["position"][0], action.data["position"][1])
+            opponent_neighboring_cities = []
+            for _, (piece, coordinates) in neighbors.items():
+                if isinstance(piece, Piece) and piece.piece_type[1] == 'C' and piece.get_owner_id() == self.opponent_id:
+                    opponent_neighboring_cities.append((piece, coordinates))
+
+            opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
+            opponent_cities_with_missing_resources = []
+
+            for city_piece, city_coords in opponent_neighboring_cities:
+                # If there are cities with possible divercities and the neighbors cities are one of them, add them to the list
+                if len(opponent_divercity_opportunities) > 0 and city_coords in opponent_divercity_opportunities[0][0]:
+                    opponent_cities_with_missing_resources.append((city_piece, opponent_divercity_opportunities[0][1]))
+
+            # Simulate placing the resource
+            player_stub = myPlayerStub(self.get_id(), self.get_piece_type())
+            piece_type = action.data["piece"] + player_stub.get_color()
+            state.rep.env[action.data["position"][0], action.data["position"][1]] = Piece(piece_type, player_stub)
+
+            # Check future opponent divercity opportunities after placing the resource
+            future_opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
+            future_opponent_cities_with_missing_resources = []
+
+            # Same logic as for opponent_divercity_opportunities
+            for city_piece, city_coords in opponent_neighboring_cities:
+                if len(future_opponent_divercity_opportunities) > 0 and city_coords in future_opponent_divercity_opportunities[0][0]:
+                    future_opponent_cities_with_missing_resources.append((city_piece, future_opponent_divercity_opportunities[0][1]))
+
+            for _, future_missing_resources in future_opponent_cities_with_missing_resources:
+                for _, current_missing_resources in opponent_cities_with_missing_resources:
+                    # TODO opponent_has_missing_ressource() in logic
+                    # Check if opponent will miss only one resource for a divercity and check if my action caused the opponent to miss only one resource for a divercity and if the opponent does not have the missing ressource to do a divercity
+                    if len(future_missing_resources) == 1 and len(future_missing_resources) < len(current_missing_resources) and not self.opponent_has_missing_ressource(state, future_missing_resources[0]):
+                        return 1
+
+                    # Check if opponent will miss only one resource for a divercity and check if my action caused the opponent to miss only one resource for a divercity
+                    if len(future_missing_resources) == 1 and len(future_missing_resources) < len(current_missing_resources):
+                        return 0
+
+            return 1
+        
+        except Exception as e:
             return 0
-
-        # Identify neighboring opponent cities to new placed resource
-        neighbors = state.get_neighbours(action.data["position"][0], action.data["position"][1])
-        opponent_neighboring_cities = []
-        for _, (piece, coordinates) in neighbors.items():
-            if isinstance(piece, Piece) and piece.piece_type[1] == 'C' and piece.get_owner_id() == self.opponent_id:
-                opponent_neighboring_cities.append((piece, coordinates))
-
-        opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
-        opponent_cities_with_missing_resources = []
-
-        for city_piece, city_coords in opponent_neighboring_cities:
-            if len(opponent_divercity_opportunities) > 0 and city_coords in opponent_divercity_opportunities[0][0]:
-                opponent_cities_with_missing_resources.append((city_piece, opponent_divercity_opportunities[0][1]))
-
-        # Simulate placing the resource
-        player_stub = myPlayerStub(self.get_id(), self.get_piece_type())
-        piece_type = action.data["piece"] + player_stub.get_color()
-        state.rep.env[action.data["position"][0], action.data["position"][1]] = Piece(piece_type, player_stub)
-
-        # Check future opponent divercity opportunities after placing the resource
-        future_opponent_divercity_opportunities = self.get_all_possible_divercities(state, self.opponent_id)
-        future_opponent_cities_with_missing_resources = []
-
-        for city_piece, city_coords in opponent_neighboring_cities:
-            if len(future_opponent_divercity_opportunities) > 0 and city_coords in future_opponent_divercity_opportunities[0][0]:
-                future_opponent_cities_with_missing_resources.append((city_piece, future_opponent_divercity_opportunities[0][1]))
-
-        for _, future_missing_resources in future_opponent_cities_with_missing_resources:
-            for _, current_missing_resources in opponent_cities_with_missing_resources:
-                if len(future_missing_resources) == 1 and len(future_missing_resources) < len(current_missing_resources):
-                    return 0
-
-        return 1  
+        
+    def opponent_has_missing_ressource(self, state: GameStateDivercite, missing_ressource):
+        #TODO: regarder le doc word et ajouter un check pour faire len(ressource) > 0
+        if missing_ressource in [p for p in state.players_pieces_left.get(self.opponent_id, {})]:
+            return 1;
+        return 0;
 
 
     def is_city_placement(self, action: LightAction):
