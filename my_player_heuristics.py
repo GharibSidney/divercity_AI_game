@@ -9,6 +9,14 @@ from seahorse.game.game_layout.board import Board, Piece
 
 import random
 
+NUM_POSITIONS = 41
+NUM_COLORS = 4
+NUM_PIECE_TYPES = 2
+NUM_PLAYERS = 2
+
+#Adjust to match memory constraints
+TABLE_SIZE = 1000000 
+
 class MyPlayer(PlayerDivercite):
     """
     Player class for Divercite game that makes random moves.
@@ -27,6 +35,10 @@ class MyPlayer(PlayerDivercite):
             time_limit (float, optional): the time limit in (s)
         """
         super().__init__(piece_type, name)
+
+        self.zobrist_table = [[[random.getrandbits(64) for _ in range(NUM_POSITIONS)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
+        self.transposition_table = {}
+
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
             [ 0,   0,   0,  'R', 'C', 'R',  0,   0,   0],
@@ -37,6 +49,7 @@ class MyPlayer(PlayerDivercite):
             [ 0,   0,  'R', 'C', 'R', 'C', 'R',  0,   0],
             [ 0,   0,   0,  'R', 'C', 'R',  0,   0,   0],
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0]
+
 ]
 
 
@@ -68,8 +81,6 @@ class MyPlayer(PlayerDivercite):
         # action = self.place_cities(current_state)
         # if action is not None:
         #     return action
-
-
 
         isMax = current_state.step%2 == 0
 
@@ -416,4 +427,42 @@ class MyPlayer(PlayerDivercite):
                 return action
             
         return None
+    
+################# Transposition table and Zobrist hashing #################
+
+    def compute_zobrist_hash(self, board_state: GameStateDivercite, zobrist_table):
+        hash_value = 0
+        for position in board_state.rep.env.keys():
+            piece = board_state.rep.env[position]
+            color, piece_type = piece.get_type()
+            player = piece.get_owner_id()
+            index = piece_type + player * NUM_PIECE_TYPES
+            hash_value ^= zobrist_table[index][color][position]
+        return hash_value
+    
+    def store_in_transposition_table(self, hash_value, depth, score, node_type):
+        index = hash_value % TABLE_SIZE
+        if index in self.transposition_table:
+            entry = self.transposition_table[index]
+            if entry.ancient or entry.depth < depth:
+                self.transposition_table[index] = MyPlayer.TranspositionEntry(hash_value, depth, score, node_type, ancient=False)
+        else:
+            self.transposition_table[index] = MyPlayer.TranspositionEntry(hash_value, depth, score, node_type, ancient=False)
+    
+    def retrieve_from_transposition_table(self, hash_value):
+        index = hash_value % TABLE_SIZE
+        if index in self.transposition_table:
+            entry = self.transposition_table[index]
+            if entry.hash_value == hash_value:
+                return entry
+        return None
+
+
+    class TranspositionEntry:
+        def __init__(self, hash_value, depth, score, node_type, ancient=True):
+            self.hash_value = hash_value
+            self.depth = depth
+            self.score = score
+            self.node_type = node_type
+            self.ancient = ancient
         
