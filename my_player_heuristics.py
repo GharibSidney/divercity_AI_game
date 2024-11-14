@@ -153,7 +153,7 @@ class MyPlayer(PlayerDivercite):
             return 2
         if current_state.step < 26:
             return 2
-        if current_state.step < 26:
+        if current_state.step < 28:
             return 3
         elif current_state.step < 30:
             return  4 #40 - current_state.step
@@ -410,13 +410,6 @@ class MyPlayer(PlayerDivercite):
                 amount_left = my_remaining_pieces[resource]
                 resource_to_choose = resource
         return resource_to_choose
-    
-
-
-
-
-        
-
     
 ################# Table of actions #################
     #ULTIMATE TODO prioritize city close to each other, opponent cities
