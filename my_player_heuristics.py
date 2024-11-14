@@ -38,6 +38,7 @@ class MyPlayer(PlayerDivercite):
 
         self.zobrist_table = [[[random.getrandbits(64) for _ in range(NUM_POSITIONS)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
         self.transposition_table = {}
+        self.current_hash = 0
 
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
@@ -439,6 +440,10 @@ class MyPlayer(PlayerDivercite):
             index = piece_type + player * NUM_PIECE_TYPES
             hash_value ^= zobrist_table[index][color][position]
         return hash_value
+    
+    def update_zobrist_hash(self, piece_type, color, position, player):
+        index = piece_type + player * NUM_PIECE_TYPES
+        self.current_hash ^= self.zobrist_table[index][color][position]
     
     def store_in_transposition_table(self, hash_value, depth, score, node_type):
         index = hash_value % TABLE_SIZE
