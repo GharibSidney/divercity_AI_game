@@ -73,7 +73,7 @@ class MyPlayer(PlayerDivercite):
 
         isMax = current_state.step%2 == 0
 
-        self.depth_max = self.pick_depth_max(isMax, current_state)
+        self.depth_max = self.pick_depth_max(isMax, current_state, remaining_time)
         self.opponent_id = self.get_opponent_id(current_state)
 
         return self.minimaxSearch(current_state, isMax)
@@ -147,11 +147,12 @@ class MyPlayer(PlayerDivercite):
                 opponent_id = players.get_id()
         return opponent_id
     
-    def pick_depth_max(self, isMax:bool, current_state:GameState):
+    def pick_depth_max(self, isMax:bool, current_state:GameState, remaining_time:int):
+        if remaining_time < 20:
+            return 2
         if current_state.step < 26:
             return 2
-        elif current_state.step < 30:
-            self.place_cities(current_state)
+        elif current_state.step < 34:
             return  4 #40 - current_state.step
         else:
            return 40 - current_state.step

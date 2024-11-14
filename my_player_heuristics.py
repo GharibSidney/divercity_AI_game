@@ -149,16 +149,18 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, current_state:GameState, remaining_time:int):
-        return 2
-        # if remaining_time < 10:
-        #     return 2
-        # if current_state.step < 26:
-        #     return 2
-        # elif current_state.step < 30:
-        #     self.place_cities(current_state)
-        #     return  4 #40 - current_state.step
-        # else:
-        #    return 40 - current_state.step
+        if remaining_time < 20:
+            return 2
+        if current_state.step < 26:
+            return 2
+        if current_state.step < 26:
+            return 3
+        elif current_state.step < 30:
+            return  4 #40 - current_state.step
+        elif current_state.step < 34:
+            return  5
+        else:
+           return 40 - current_state.step
     
 
 ################ Divercity part ################
@@ -276,11 +278,13 @@ class MyPlayer(PlayerDivercite):
 
 ################ Heuristic part ################
 
-    def evaluation(self, state:GameStateDivercite, action: LightAction, score:int, ) -> int: #all_actions_divercity:List[LightAction]
+    def evaluation(self, state:GameStateDivercite, action: LightAction, score:int, ) -> int:
         # city_score = -100000 * self.is_city_placement(action)
-        # maximum_resource = 100000 * self.max_available_resource(state, action)
-        # score_is_divercity = self.is_divercity(all_actions_divercity , action)
-        eval = score # + city_score + maximum_resource + score_is_divercity
+        min_available_resource = self.get_minimum_unique_resource(state)
+        potential_divercities = self.get_one_ressource_divercity( state, self.get_id())
+        my_divercities = self.get_amount_divercity(state, self.get_id())
+       # opponent_divercities = self.get_opponent_amount_divercity(state) #TODO demander au chargé comment gérer ce cas pour le min
+        eval = score + min_available_resource + potential_divercities + my_divercities
 
         return eval
 
@@ -307,6 +311,42 @@ class MyPlayer(PlayerDivercite):
             return 1
         return 0
     
+    def get_minimum_unique_resource(self, current_state: GameStateDivercite):
+        # Counting the number of unique resources left for the player
+        my_remaining_pieces =  current_state.players_pieces_left.get(self.get_id(), {})
+        minimum_amount_left = 3
+        for resource in my_remaining_pieces:
+            if resource[0] == 'R' and my_remaining_pieces[resource] < minimum_amount_left:
+                minimum_amount_left = my_remaining_pieces[resource]
+        return minimum_amount_left
+    
+
+    
+    def get_amount_divercity(self, state: GameStateDivercite, player_id: int):
+        # Counting the number of divercities left for the player
+        player_cities = self.get_player_cities(state, player_id)
+        divercities = 0
+        for (x, y) in player_cities:
+            if not state.check_divercite([x, y]):
+                divercities += 1
+        return divercities
+    
+    def get_one_ressource_divercity(self, state: GameStateDivercite, player_id: int):
+        # Counting the number of divercities left for the player with only one resource missing
+        player_cities = self.get_player_cities_with_piece(state, player_id)
+        number_of_divercities = 0
+        for (x, y), city_piece in player_cities:
+            if not state.check_divercite([x, y]):
+                neighbours = state.get_neighbours(x, y)
+                neighbor_colors_count = {"R": 0, "G": 0, "B": 0, "Y": 0}
+                for _, (piece, _) in neighbours.items():
+                    if isinstance(piece, Piece):
+                        neighbor_colors_count[piece.get_type()[0]] += 1
+                if any(count > 1 for count in neighbor_colors_count.values()):
+                    continue
+                if len([color for color, count in neighbor_colors_count.items() if count == 0]) == 1:
+                    number_of_divercities += 1
+        return number_of_divercities
 
 ################# Helper functions #################
 
@@ -320,8 +360,8 @@ class MyPlayer(PlayerDivercite):
         for p in my_remaining_pieces:
             if my_remaining_pieces[p] > 0:
                 count_my_pieces_left += 1
-        opponent_remaining_pieces = current_state.players_pieces_left.get(self.opponent_id, {})
 
+        opponent_remaining_pieces = current_state.players_pieces_left.get(self.opponent_id, {})
         for p in opponent_remaining_pieces:
             if opponent_remaining_pieces[p] > 0:
                 count_opponent_pieces_left += 1
@@ -370,6 +410,13 @@ class MyPlayer(PlayerDivercite):
                 amount_left = my_remaining_pieces[resource]
                 resource_to_choose = resource
         return resource_to_choose
+    
+
+
+
+
+        
+
     
 ################# Table of actions #################
     #ULTIMATE TODO prioritize city close to each other, opponent cities
