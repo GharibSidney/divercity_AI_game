@@ -148,13 +148,17 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, isMax:bool, current_state:GameState):
-        if current_state.step < 26:
-            return 2
-        elif current_state.step < 30:
-            self.place_cities(current_state)
-            return  4 #40 - current_state.step
-        else:
-           return 40 - current_state.step
+        return 2
+        # if current_state.step < 26:
+        #     return 2
+        # if current_state.step < 28:
+        #     return 3
+        # elif current_state.step < 30:
+        #     return  4 #40 - current_state.step
+        # elif current_state.step < 34:
+        #     return  5
+        # else:
+        #    return 40 - current_state.step
     
 
 ################ Divercity part ################

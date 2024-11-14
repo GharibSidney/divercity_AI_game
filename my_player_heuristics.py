@@ -149,18 +149,19 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, current_state:GameState, remaining_time:int):
-        if remaining_time < 20:
-            return 2
-        if current_state.step < 26:
-            return 2
-        if current_state.step < 28:
-            return 3
-        elif current_state.step < 30:
-            return  4 #40 - current_state.step
-        elif current_state.step < 34:
-            return  5
-        else:
-           return 40 - current_state.step
+        return 2
+        # if remaining_time < 20:
+        #     return 2
+        # if current_state.step < 26:
+        #     return 2
+        # if current_state.step < 28:
+        #     return 3
+        # elif current_state.step < 30:
+        #     return  4 #40 - current_state.step
+        # elif current_state.step < 34:
+        #     return  5
+        # else:
+        #    return 40 - current_state.step
     
 
 ################ Divercity part ################
@@ -281,10 +282,11 @@ class MyPlayer(PlayerDivercite):
     def evaluation(self, state:GameStateDivercite, action: LightAction, score:int, ) -> int:
         # city_score = -100000 * self.is_city_placement(action)
         min_available_resource = self.get_minimum_unique_resource(state)
-        potential_divercities = self.get_one_ressource_divercity( state, self.get_id())
+        potential_divercities = 2* self.get_one_ressource_divercity( state, self.get_id())
         my_divercities = self.get_amount_divercity(state, self.get_id())
-       # opponent_divercities = self.get_opponent_amount_divercity(state) #TODO demander au chargé comment gérer ce cas pour le min
-        eval = score + min_available_resource + potential_divercities + my_divercities
+        block_score = self.get_block_opponent_divercity_potential(state)
+        heuristic = self.heuristic(state)
+        eval = heuristic + score + min_available_resource + potential_divercities + my_divercities + block_score
 
         return eval
 
@@ -347,6 +349,50 @@ class MyPlayer(PlayerDivercite):
                 if len([color for color, count in neighbor_colors_count.items() if count == 0]) == 1:
                     number_of_divercities += 1
         return number_of_divercities
+    
+
+    def heuristic(self, state: GameState) -> float:
+        """
+        Calculate the heuristic score for a given game state based on the current player's cities.
+        
+        Args:
+            state (GameState): The current state of the game.
+        
+        Returns:
+            float: Heuristic score for the state.
+        """
+        score = 0
+        diversity_points = 5
+        tie_breaker_weight = 0.1
+        
+        for city in self.get_player_cities_with_piece(state, self.get_id()):
+            surrounding_resources = self.get_surrounding_resources(city[0], state)
+            unique_resources = set(surrounding_resources)
+            
+            # Check for Divercité configuration (4 unique resources around city)
+            if len(unique_resources) == 4:
+                score += diversity_points
+            else:
+                # Score based on identical resources if not all unique
+                same_color_count = surrounding_resources.count(city[1].piece_type[0])
+                score += same_color_count  # 1 point per identical resource
+            
+                # Tie-breaker score: count cities with majority identical colors around them
+                if same_color_count >= 3:
+                    score += tie_breaker_weight * same_color_count
+
+        return score
+    
+
+    def get_block_opponent_divercity_potential(self, state: GameStateDivercite) -> int:
+        opponent_cities = self.get_player_cities_with_piece(state, self.get_opponent_id(state))
+        block_score = 0
+        for city in opponent_cities:
+            surrounding_resources = self.get_surrounding_resources(city[0], state)
+            unique_resources_needed = 4 - len(set(surrounding_resources))
+            if unique_resources_needed > 0:
+                block_score += unique_resources_needed  # Increase block score based on the number of resources needed to disrupt
+        return block_score
 
 ################# Helper functions #################
 
@@ -410,6 +456,15 @@ class MyPlayer(PlayerDivercite):
                 amount_left = my_remaining_pieces[resource]
                 resource_to_choose = resource
         return resource_to_choose
+    
+    def get_surrounding_resources(self, city: Tuple[int, int], state: GameStateDivercite) -> List[str]:
+        # Get the resources surrounding a city
+        resources = []
+        for direction in state.get_neighbours(city[0], city[1]):
+            piece, _ = state.get_neighbours(city[0], city[1])[direction]
+            if isinstance(piece, Piece):
+                resources.append(piece.piece_type)
+        return resources
     
 ################# Table of actions #################
     #ULTIMATE TODO prioritize city close to each other, opponent cities
