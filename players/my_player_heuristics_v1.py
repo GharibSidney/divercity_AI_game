@@ -51,13 +51,19 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        action = self.divercity_priority(current_state)
-        if action is not None:
-            return action
-        
-        action = self.prevent_opponent_divercity(current_state, self.get_id())
-        if action is not None:
-            return action
+        # possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
+        # possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
+
+        # for divercity in possible_Divercite_actions:
+        #     if len(divercity[1]) == 1 : 
+        #         print('boy')
+        #         action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
+        #         if action is not None:
+        #             return action
+                
+        # action = self.prevent_opponent_divercity(current_state, self.get_id())
+        # if action is not None:
+        #     return action
         
         # action = self.place_cities(current_state)
         # if action is not None:
@@ -143,6 +149,7 @@ class MyPlayer(PlayerDivercite):
         return opponent_id
     
     def pick_depth_max(self, current_state:GameState, remaining_time:int):
+        # return 2
         if remaining_time < 20:
             return 2
         if current_state.step < 28:
@@ -506,19 +513,4 @@ class MyPlayer(PlayerDivercite):
                 return action
             
         return None
-    
-    def divercity_priority(self, current_state:GameState):
-        possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
-        possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
-
-        for divercity in possible_Divercite_actions:
-            if len(divercity[1]) == 1 : 
-                action = self.do_divercity(current_state, self.get_id(), possible_Divercite_actions)
-                current_score = current_state.scores[self.get_id()] - current_state.scores[self.opponent_id]
-                next_state = current_state.apply_action(action)
-                # Don't do a divercity if opponent also gets a divercity
-                # if score difference is not higher than current score
-                # this means the opponent will also get a divercity
-                if next_state.scores[self.get_id()] - next_state.scores[self.opponent_id] > current_score:
-                    return action
-    
+        
