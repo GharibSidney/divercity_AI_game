@@ -281,10 +281,10 @@ class MyPlayer(PlayerDivercite):
 
     def evaluation(self, state:GameStateDivercite, action: LightAction, score:int, ) -> int:
         # city_score = -100000 * self.is_city_placement(action)
-        min_available_resource = self.get_minimum_unique_resource(state)
+        min_available_resource = 2*self.get_minimum_unique_resource(state)
         potential_divercities = 2* self.get_one_ressource_divercity( state, self.get_id())
         my_divercities = self.get_amount_divercity(state, self.get_id())
-        block_score = self.get_block_opponent_divercity_potential(state)
+        block_score = 2*self.get_block_opponent_divercity_potential(state)
         heuristic = self.heuristic(state)
         eval = heuristic + score + min_available_resource + potential_divercities + my_divercities + block_score
 

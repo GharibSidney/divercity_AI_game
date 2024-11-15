@@ -13,8 +13,8 @@
             "args": [
                 "-t",
                 "local",
-                "my_player_heuristics.py",
                 "players/my_player_alpha_beta_pruning_city_v1.py",
+                "my_player_heuristics.py",
                 
             ]
         }
