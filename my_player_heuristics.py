@@ -6,6 +6,7 @@ from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
 from seahorse.game.light_action import LightAction
 from seahorse.game.game_layout.board import Board, Piece
+from collections import OrderedDict
 
 import random
 
@@ -15,9 +16,7 @@ NUM_PIECE_TYPES = 2
 NUM_PLAYERS = 2
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
-
-#Adjust to match memory constraints
-TABLE_SIZE = 1000000 
+TABLE_MAX_SIZE = 40000
 
 class MyPlayer(PlayerDivercite):
     """
@@ -52,7 +51,17 @@ class MyPlayer(PlayerDivercite):
         ]
 
         # Key is the hash of a particular state, value is a tuple containing the, v and m (from evaluation)
-        self.transposition_table = {}
+        self.transposition_table = self.LimitedSizeDict(maxsize=TABLE_MAX_SIZE)
+
+    class LimitedSizeDict(OrderedDict):
+        def __init__(self, maxsize: int, *args, **kwargs):
+            self.maxsize = maxsize
+            super().__init__(*args, **kwargs)
+
+        def __setitem__(self, key, value):
+            if len(self) >= self.maxsize:
+                self.popitem(last = False)
+            super().__setitem__(key, value)
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
@@ -459,7 +468,3 @@ class MyPlayer(PlayerDivercite):
         player_scores = tuple(state.scores.values())
         current_step = state.step
         return f"{board_state}|{player_scores}|{current_step}|{depth}|{alpha}|{beta}|{'max' if isMax else 'min'}"
-
-    
-
-        
