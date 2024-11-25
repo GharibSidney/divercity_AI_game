@@ -13,6 +13,8 @@ NUM_POSITIONS = 41
 NUM_COLORS = 4
 NUM_PIECE_TYPES = 2
 NUM_PLAYERS = 2
+BOARD_WIDTH = 9
+BOARD_HEIGHT = 9
 
 #Adjust to match memory constraints
 TABLE_SIZE = 1000000 
@@ -36,7 +38,9 @@ class MyPlayer(PlayerDivercite):
         """
         super().__init__(piece_type, name)
 
-        self.zobrist_table = [[[random.getrandbits(64) for _ in range(NUM_POSITIONS)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
+        # self.zobrist_table = [[[random.getrandbits(64) for _ in range(NUM_POSITIONS)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
+        self.zobrist_table = [[[random.getrandbits(64) for _ in range(BOARD_WIDTH * BOARD_HEIGHT)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
+
         self.transposition_table = {}
         self.current_hash = 0
 
@@ -65,6 +69,7 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
+        self.compute_zobrist_hash(current_state)
         # possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
         # possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
 
@@ -431,20 +436,20 @@ class MyPlayer(PlayerDivercite):
     
 ################# Transposition table and Zobrist hashing #################
 
-    def compute_zobrist_hash(self, board_state: GameStateDivercite, zobrist_table):
+    def compute_zobrist_hash(self, board_state: GameStateDivercite):
         hash_value = 0
         for position in board_state.rep.env.keys():
             piece = board_state.rep.env[position]
-            color, piece_type = piece.get_type()
-            player = piece.get_owner_id()
-            index = piece_type + player * NUM_PIECE_TYPES
-            hash_value ^= zobrist_table[index][color][position]
+            piece_type = piece.get_type()
+            color, piece_city_ressource, player = self.encode_piece_type(piece_type)
+            flat_position = self.position_to_index(position, BOARD_WIDTH)
+            index = piece_city_ressource + player * NUM_PIECE_TYPES
+            hash_value ^= self.zobrist_table[index][color][flat_position]
         return hash_value
     
-    def update_zobrist_hash(self, piece_type, color, position, player):
-        index = piece_type + player * NUM_PIECE_TYPES
-        self.current_hash ^= self.zobrist_table[index][color][position]
-    
+    def update_zobrist_hash(self, index, color, flat_position):
+        self.current_hash ^= self.zobrist_table[index][color][flat_position]
+
     def store_in_transposition_table(self, hash_value, depth, score, node_type):
         index = hash_value % TABLE_SIZE
         if index in self.transposition_table:
@@ -461,7 +466,21 @@ class MyPlayer(PlayerDivercite):
             if entry.hash_value == hash_value:
                 return entry
         return None
+    
+    def encode_piece_type(self, piece_type: str) -> Tuple[int, int, int]:
+        color_map = {'Y': 0, 'R': 1, 'G': 2, 'B': 3}
+        piece_type_map = {'R': 0, 'C': 1} 
+        player_map = {'W': 0, 'B': 1}
 
+        color = color_map[piece_type[0]]
+        piece_city_ressource = piece_type_map[piece_type[1]]
+        player = player_map[piece_type[2]]
+
+        return color, piece_city_ressource, player
+    
+    def position_to_index(self, position: Tuple[int, int], board_width: int) -> int:
+        row, col = position
+        return row * board_width + col
 
     class TranspositionEntry:
         def __init__(self, hash_value, depth, score, node_type, ancient=True):
