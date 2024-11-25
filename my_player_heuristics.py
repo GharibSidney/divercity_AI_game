@@ -38,10 +38,9 @@ class MyPlayer(PlayerDivercite):
         """
         super().__init__(piece_type, name)
 
-        # self.zobrist_table = [[[random.getrandbits(64) for _ in range(NUM_POSITIONS)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
-        self.zobrist_table = [[[random.getrandbits(64) for _ in range(BOARD_WIDTH * BOARD_HEIGHT)] for _ in range(NUM_COLORS)] for _ in range(NUM_PIECE_TYPES * NUM_PLAYERS)]
-
-        self.transposition_table = {}
+        # self.transposition_table = {}
+        self.zobrist_table = self.initialize_zobrist_table()
+        self.board = self.initialize_empty_board()
         self.current_hash = 0
 
         self.board = [
@@ -57,6 +56,21 @@ class MyPlayer(PlayerDivercite):
 
 ]
 
+    def initialize_zobrist_table(self):
+        zobrist_table = {}
+        piece_types = ['YC', 'RC', 'BC', 'GC', 'YR', 'RR', 'BR', 'GR']
+        for _, piece in enumerate(piece_types):
+            zobrist_table[piece] = random.getrandbits(64)
+
+        return zobrist_table
+    
+    def initialize_empty_board(self):
+        return [[None for _ in range(9)] for _ in range(9)]
+    
+    def place_piece(self, row, col, piece):
+        piece_hash = self.zobrist_table.get(piece, 0)
+        self.board[row][col] = piece
+        self.current_hash ^= piece_hash
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
@@ -69,7 +83,7 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        self.compute_zobrist_hash(current_state)
+        
         # possible_Divercite_actions = self.get_all_possible_divercities(current_state, self.get_id())
         # possible_Divercite_actions = self.sort_divercity(possible_Divercite_actions)
 
@@ -436,57 +450,5 @@ class MyPlayer(PlayerDivercite):
     
 ################# Transposition table and Zobrist hashing #################
 
-    def compute_zobrist_hash(self, board_state: GameStateDivercite):
-        hash_value = 0
-        for position in board_state.rep.env.keys():
-            piece = board_state.rep.env[position]
-            piece_type = piece.get_type()
-            color, piece_city_ressource, player = self.encode_piece_type(piece_type)
-            flat_position = self.position_to_index(position, BOARD_WIDTH)
-            index = piece_city_ressource + player * NUM_PIECE_TYPES
-            hash_value ^= self.zobrist_table[index][color][flat_position]
-        return hash_value
-    
-    def update_zobrist_hash(self, index, color, flat_position):
-        self.current_hash ^= self.zobrist_table[index][color][flat_position]
 
-    def store_in_transposition_table(self, hash_value, depth, score, node_type):
-        index = hash_value % TABLE_SIZE
-        if index in self.transposition_table:
-            entry = self.transposition_table[index]
-            if entry.ancient or entry.depth < depth:
-                self.transposition_table[index] = MyPlayer.TranspositionEntry(hash_value, depth, score, node_type, ancient=False)
-        else:
-            self.transposition_table[index] = MyPlayer.TranspositionEntry(hash_value, depth, score, node_type, ancient=False)
-    
-    def retrieve_from_transposition_table(self, hash_value):
-        index = hash_value % TABLE_SIZE
-        if index in self.transposition_table:
-            entry = self.transposition_table[index]
-            if entry.hash_value == hash_value:
-                return entry
-        return None
-    
-    def encode_piece_type(self, piece_type: str) -> Tuple[int, int, int]:
-        color_map = {'Y': 0, 'R': 1, 'G': 2, 'B': 3}
-        piece_type_map = {'R': 0, 'C': 1} 
-        player_map = {'W': 0, 'B': 1}
-
-        color = color_map[piece_type[0]]
-        piece_city_ressource = piece_type_map[piece_type[1]]
-        player = player_map[piece_type[2]]
-
-        return color, piece_city_ressource, player
-    
-    def position_to_index(self, position: Tuple[int, int], board_width: int) -> int:
-        row, col = position
-        return row * board_width + col
-
-    class TranspositionEntry:
-        def __init__(self, hash_value, depth, score, node_type, ancient=True):
-            self.hash_value = hash_value
-            self.depth = depth
-            self.score = score
-            self.node_type = node_type
-            self.ancient = ancient
         

@@ -1,3 +1,24 @@
+// {
+//     // Use IntelliSense to learn about possible attributes.
+//     // Hover to view descriptions of existing attributes.
+//     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Python Debugger: main_divercite.py with Arguments",
+//             "type": "debugpy",
+//             "request": "launch",
+//             "program": "${workspaceFolder}/main_divercite.py",
+//             "console": "integratedTerminal",
+//             "args": [
+//                 "-t",
+//                 "human_vs_computer",
+//                 "my_player_alpha_beta_pruning_city.py",
+//             ]
+//         }
+//     ]
+// }
+
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
@@ -12,10 +33,8 @@
             "console": "integratedTerminal",
             "args": [
                 "-t",
-                "local",
+                "human_vs_computer",
                 "my_player_heuristics.py",
-                "players/my_player_alpha_beta_pruning_city_v1.py"
-                
             ]
         }
     ]
