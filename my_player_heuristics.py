@@ -16,7 +16,7 @@ NUM_PIECE_TYPES = 2
 NUM_PLAYERS = 2
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
-TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM. Max is 51 million entries
+TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM with small risk to overflow. Max is 51 million entries
 
 class MyPlayer(PlayerDivercite):
     """
