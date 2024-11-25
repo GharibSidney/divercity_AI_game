@@ -38,10 +38,6 @@ class MyPlayer(PlayerDivercite):
         """
         super().__init__(piece_type, name)
 
-        # self.transposition_table = {}
-        self.zobrist_table = self.initialize_zobrist_table()
-        self.board = self.initialize_empty_board()
-        self.current_hash = 0
 
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
@@ -53,24 +49,10 @@ class MyPlayer(PlayerDivercite):
             [ 0,   0,  'R', 'C', 'R', 'C', 'R',  0,   0],
             [ 0,   0,   0,  'R', 'C', 'R',  0,   0,   0],
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0]
+        ]
 
-]
-
-    def initialize_zobrist_table(self):
-        zobrist_table = {}
-        piece_types = ['YC', 'RC', 'BC', 'GC', 'YR', 'RR', 'BR', 'GR']
-        for _, piece in enumerate(piece_types):
-            zobrist_table[piece] = random.getrandbits(64)
-
-        return zobrist_table
-    
-    def initialize_empty_board(self):
-        return [[None for _ in range(9)] for _ in range(9)]
-    
-    def place_piece(self, row, col, piece):
-        piece_hash = self.zobrist_table.get(piece, 0)
-        self.board[row][col] = piece
-        self.current_hash ^= piece_hash
+        # Key is the hash of a particular state, value is a tuple containing the, v and m (from evaluation)
+        self.transposition_table = {}
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
@@ -119,9 +101,17 @@ class MyPlayer(PlayerDivercite):
 
 
     def maxValue(self, state: GameState, main_action:LightAction, counter:int, alpha = -1000000, beta = 1000000):
+        # We use transposition table to avoid redundant calculations here
+        state_hash = self.hash_state(state, counter, alpha, beta, True)
+        if state_hash in self.transposition_table:
+            #We return the already calculated value of that state from the transposition table
+            return self.transposition_table[state_hash]
+
         if self.isTerminal(counter):
-            all_actions_divercity = self.all_action_divercity(state, self.get_id(), self.get_all_possible_divercities(state, self.get_id()))
-            return self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            # We store the result in the transposition table
+            self.transposition_table[state_hash] = result
+            return result
         
         v_star = -1000000
         m_star = None
@@ -137,12 +127,23 @@ class MyPlayer(PlayerDivercite):
             if alpha >= beta:
                 return v_star, m_star
             counter -= 1
+        
+        # It was not an already calculated state, so we store the result in the transposition table
+        self.transposition_table[state_hash] = (v_star, m_star)
         return v_star, m_star
 
+
     def minValue(self, state: GameState, main_action:LightAction, counter: int, alpha = -1000000, beta = 1000000):
+        # We use transposition table to avoid redundant calculations here
+        state_hash = self.hash_state(state, counter, alpha, beta, False)
+        if state_hash in self.transposition_table:
+            return self.transposition_table[state_hash]
+
         if self.isTerminal(counter):
-            # the best score is reversed because we are the opponent
-            return  self.evaluation(state, main_action,  state.scores[self.get_id()] - state.scores[self.opponent_id]), None
+            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            # We store the result in the transposition table
+            self.transposition_table[state_hash] = result
+            return result
         
         v_star = 1000000
         m_star = None
@@ -157,6 +158,9 @@ class MyPlayer(PlayerDivercite):
             counter -= 1
             if v_star <= alpha:
                 return v_star, m_star
+                    
+        # It was not an already calculated state, so we store the result in the transposition table
+        self.transposition_table[state_hash] = (v_star, m_star)
         return v_star, m_star
         
     def isTerminal(self, counter):
@@ -448,7 +452,14 @@ class MyPlayer(PlayerDivercite):
             
         return None
     
-################# Transposition table and Zobrist hashing #################
+################# Transposition table #################
 
+    def hash_state(self, state: GameState, depth: int, alpha: int, beta: int, isMax: bool) -> str:
+        board_state = str(state.get_rep().get_env())
+        player_scores = tuple(state.scores.values())
+        current_step = state.step
+        return f"{board_state}|{player_scores}|{current_step}|{depth}|{alpha}|{beta}|{'max' if isMax else 'min'}"
+
+    
 
         
