@@ -453,7 +453,7 @@ class MyPlayer(PlayerDivercite):
     
 ################# Transposition table #################
 
-    def hash_state(self, state: GameState, depth: int, alpha: int, beta: int, isMax: bool) -> str:
+    def hash_state(self, state: GameState, depth: int, alpha: int, beta: int, isMax: bool):
         board_state = str(state.get_rep().get_env())
         player_scores = tuple(state.scores.values())
         current_step = state.step
