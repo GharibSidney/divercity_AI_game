@@ -16,7 +16,7 @@ NUM_PIECE_TYPES = 2
 NUM_PLAYERS = 2
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
-TABLE_MAX_SIZE = 40000
+TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM. Max is 51 million entries
 
 class MyPlayer(PlayerDivercite):
     """
@@ -50,7 +50,7 @@ class MyPlayer(PlayerDivercite):
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0]
         ]
 
-        # Key is the hash of a particular state, value is a tuple containing the, v and m (from evaluation)
+        # Key is the hash of a particular state, value is the tuple (v,m) obtained from evaluation function
         self.transposition_table = self.LimitedSizeDict(maxsize=TABLE_MAX_SIZE)
 
     class LimitedSizeDict(OrderedDict):
@@ -206,9 +206,6 @@ class MyPlayer(PlayerDivercite):
     
 
 ################ Divercity part ################
-
-
-
     def get_player_cities(self, current_state: GameStateDivercite, player_id: int):
             board = current_state.get_rep().get_env()
             return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
