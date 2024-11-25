@@ -7,15 +7,8 @@ from seahorse.utils.custom_exceptions import MethodNotImplementedError
 from seahorse.game.light_action import LightAction
 from seahorse.game.game_layout.board import Board, Piece
 from collections import OrderedDict
-
 import random
 
-NUM_POSITIONS = 41
-NUM_COLORS = 4
-NUM_PIECE_TYPES = 2
-NUM_PLAYERS = 2
-BOARD_WIDTH = 9
-BOARD_HEIGHT = 9
 TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM with small risk to overflow. Max is 51 million entries
 
 class MyPlayer(PlayerDivercite):
