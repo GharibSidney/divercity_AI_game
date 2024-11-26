@@ -6,8 +6,10 @@ from game_state_divercite import GameStateDivercite
 from seahorse.utils.custom_exceptions import MethodNotImplementedError
 from seahorse.game.light_action import LightAction
 from seahorse.game.game_layout.board import Board, Piece
-
+from collections import OrderedDict
 import random
+
+TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM with small risk to overflow. Max is 51 million entries
 
 class MyPlayer(PlayerDivercite):
     """
@@ -27,6 +29,8 @@ class MyPlayer(PlayerDivercite):
             time_limit (float, optional): the time limit in (s)
         """
         super().__init__(piece_type, name)
+
+
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
             [ 0,   0,   0,  'R', 'C', 'R',  0,   0,   0],
@@ -37,8 +41,20 @@ class MyPlayer(PlayerDivercite):
             [ 0,   0,  'R', 'C', 'R', 'C', 'R',  0,   0],
             [ 0,   0,   0,  'R', 'C', 'R',  0,   0,   0],
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0]
-]
+        ]
 
+        # Key is the hash of a particular state, value is the tuple (v,m) obtained from evaluation function
+        self.transposition_table = self.LimitedSizeTable(maxsize=TABLE_MAX_SIZE)
+
+    class LimitedSizeTable(OrderedDict):
+        def __init__(self, maxsize: int, *args, **kwargs):
+            self.maxsize = maxsize
+            super().__init__(*args, **kwargs)
+
+        def __setitem__(self, key, value):
+            if len(self) >= self.maxsize:
+                self.popitem(last = False)
+            super().__setitem__(key, value)
 
     def compute_action(self, current_state: GameState, remaining_time: int = 1e9, **kwargs) -> Action:
         """
@@ -63,8 +79,6 @@ class MyPlayer(PlayerDivercite):
         # if action is not None:
         #     return action
 
-
-
         isMax = current_state.step%2 == 0
 
         self.depth_max = self.pick_depth_max(current_state, remaining_time)
@@ -82,9 +96,17 @@ class MyPlayer(PlayerDivercite):
 
 
     def maxValue(self, state: GameState, main_action:LightAction, counter:int, alpha = -1000000, beta = 1000000):
+        # We use transposition table to avoid redundant calculations here
+        state_hash = self.hash_state(state, counter, alpha, beta, True)
+        if state_hash in self.transposition_table:
+            #We return the already calculated value of that state from the transposition table
+            return self.transposition_table[state_hash]
+
         if self.isTerminal(counter):
-            all_actions_divercity = self.all_action_divercity(state, self.get_id(), self.get_all_possible_divercities(state, self.get_id()))
-            return self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            # We store the result in the transposition table
+            self.transposition_table[state_hash] = result
+            return result
         
         v_star = -1000000
         m_star = None
@@ -100,12 +122,23 @@ class MyPlayer(PlayerDivercite):
             if alpha >= beta:
                 return v_star, m_star
             counter -= 1
+        
+        # It was not an already calculated state, so we store the result in the transposition table
+        self.transposition_table[state_hash] = (v_star, m_star)
         return v_star, m_star
 
+
     def minValue(self, state: GameState, main_action:LightAction, counter: int, alpha = -1000000, beta = 1000000):
+        # We use transposition table to avoid redundant calculations here
+        state_hash = self.hash_state(state, counter, alpha, beta, False)
+        if state_hash in self.transposition_table:
+            return self.transposition_table[state_hash]
+
         if self.isTerminal(counter):
-            # the best score is reversed because we are the opponent
-            return  self.evaluation(state, main_action,  state.scores[self.get_id()] - state.scores[self.opponent_id]), None
+            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            # We store the result in the transposition table
+            self.transposition_table[state_hash] = result
+            return result
         
         v_star = 1000000
         m_star = None
@@ -120,6 +153,9 @@ class MyPlayer(PlayerDivercite):
             counter -= 1
             if v_star <= alpha:
                 return v_star, m_star
+                    
+        # It was not an already calculated state, so we store the result in the transposition table
+        self.transposition_table[state_hash] = (v_star, m_star)
         return v_star, m_star
         
     def isTerminal(self, counter):
@@ -160,9 +196,6 @@ class MyPlayer(PlayerDivercite):
     
 
 ################ Divercity part ################
-
-
-
     def get_player_cities(self, current_state: GameStateDivercite, player_id: int):
             board = current_state.get_rep().get_env()
             return [(i, j) for (i, j), piece in board.items() if isinstance(piece, Piece) and piece.get_type()[1] == 'C' and piece.get_owner_id() == player_id]
@@ -522,3 +555,10 @@ class MyPlayer(PlayerDivercite):
                 if next_state.scores[self.get_id()] - next_state.scores[self.opponent_id] > current_score:
                     return action
     
+################# Transposition table #################
+
+    def hash_state(self, state: GameState, depth: int, alpha: int, beta: int, isMax: bool):
+        board_state = str(state.get_rep().get_env())
+        player_scores = tuple(state.scores.values())
+        current_step = state.step
+        return f"{board_state}|{player_scores}|{current_step}|{depth}|{alpha}|{beta}|{'max' if isMax else 'min'}"
