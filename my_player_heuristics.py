@@ -44,9 +44,9 @@ class MyPlayer(PlayerDivercite):
         ]
 
         # Key is the hash of a particular state, value is the tuple (v,m) obtained from evaluation function
-        self.transposition_table = self.LimitedSizeDict(maxsize=TABLE_MAX_SIZE)
+        self.transposition_table = self.LimitedSizeTable(maxsize=TABLE_MAX_SIZE)
 
-    class LimitedSizeDict(OrderedDict):
+    class LimitedSizeTable(OrderedDict):
         def __init__(self, maxsize: int, *args, **kwargs):
             self.maxsize = maxsize
             super().__init__(*args, **kwargs)
