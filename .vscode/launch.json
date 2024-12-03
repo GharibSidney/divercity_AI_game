@@ -13,8 +13,8 @@
             "args": [
                 "-t",
                 "local",
-                "players/my_player_heuristics_v1.py",
-                "my_player_heuristics.py",
+                "my_player_heuristics_v1_no_hardcoded.py",
+                "my_player_minmax_diveristy_v1.py",
                 
             ]
         }
