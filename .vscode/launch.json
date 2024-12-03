@@ -13,8 +13,8 @@
             "args": [
                 "-t",
                 "local",
-                "my_player_heuristics_v1_no_hardcoded.py",
-                "my_player_minmax_diveristy_v1.py",
+                "my_player_improved_abyss.py",
+                "my_player_alpha_beta_pruning_city.py",
                 
             ]
         }
