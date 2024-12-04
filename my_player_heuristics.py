@@ -67,13 +67,13 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        action = self.divercity_priority(current_state)
-        if action is not None:
-            return action
+        # action = self.divercity_priority(current_state)
+        # if action is not None:
+        #     return action
         
-        action = self.prevent_opponent_divercity(current_state, self.get_id())
-        if action is not None:
-            return action
+        # action = self.prevent_opponent_divercity(current_state, self.get_id())
+        # if action is not None:
+        #     return action
         
         # action = self.place_cities(current_state)
         # if action is not None:

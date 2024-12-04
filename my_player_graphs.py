@@ -20,7 +20,7 @@ class MyPlayer(PlayerDivercite):
         piece_type (str): piece type of the player
     """
 
-    def __init__(self, piece_type: str, name: str = "MyPlayer", use_transposition_table: bool = False):
+    def __init__(self, piece_type: str, name: str = "MyPlayer", use_transposition_table: bool = True):
         """
         Initialize the PlayerDivercite instance.
 
@@ -32,7 +32,7 @@ class MyPlayer(PlayerDivercite):
         super().__init__(piece_type, name)
         self.use_transposition_table = use_transposition_table
         self.time_per_turn = []
-
+        self.depth_dict = {}
 
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
@@ -69,17 +69,18 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-        start_time = time.time()
+        # start_time = time.time()
 
         isMax = current_state.step%2 == 0
 
         self.depth_max = self.pick_depth_max(current_state, remaining_time)
         self.opponent_id = self.get_opponent_id(current_state)
         action = self.minimaxSearch(current_state, isMax)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        self.time_per_turn.append(elapsed_time)
-        print(f"Temps d'exécution pour ce tour : {elapsed_time:.4f} secondes")
+        # end_time = time.time()
+        # elapsed_time = end_time - start_time
+        # self.time_per_turn.append(elapsed_time)
+        # print(f"Temps d'exécution pour ce tour : {elapsed_time:.4f} secondes")
+        self.depth_dict[current_state.step] = self.depth_max
         return action 
 
 ################ Minmax part ################
@@ -95,7 +96,7 @@ class MyPlayer(PlayerDivercite):
         # We use transposition table to avoid redundant calculations here
         state_hash = None
         if self.use_transposition_table:
-            state_hash = self.hash_state(state, counter, alpha, beta, True)
+            state_hash = self.hash_state(state)
             if state_hash in self.transposition_table:
                 #We return the already calculated value of that state from the transposition table
                 return self.transposition_table[state_hash]
@@ -132,7 +133,7 @@ class MyPlayer(PlayerDivercite):
         # We use transposition table to avoid redundant calculations here
         state_hash = None
         if self.use_transposition_table:   
-            state_hash = self.hash_state(state, counter, alpha, beta, False)
+            state_hash = self.hash_state(state)
             if state_hash in self.transposition_table:
                 return self.transposition_table[state_hash]
 
@@ -187,7 +188,7 @@ class MyPlayer(PlayerDivercite):
             return 2
         if current_state.step < 28:
             return 2
-        elif current_state.step < 35: 
+        elif current_state.step < 31: 
             return 4
         # if current_state.step < 28:
         #     return 3
@@ -561,8 +562,6 @@ class MyPlayer(PlayerDivercite):
     
 ################# Transposition table #################
 
-    def hash_state(self, state: GameState, depth: int, alpha: int, beta: int, isMax: bool):
+    def hash_state(self, state: GameState):
         board_state = str(state.get_rep().get_env())
-        player_scores = tuple(state.scores.values())
-        current_step = state.step
-        return f"{board_state}|{player_scores}|{current_step}|{depth}|{alpha}|{beta}|{'max' if isMax else 'min'}"
+        return f"{board_state}"
