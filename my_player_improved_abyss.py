@@ -31,8 +31,6 @@ class MyPlayer(PlayerDivercite):
         """
         super().__init__(piece_type, name)
         self.use_transposition_table = use_transposition_table
-        self.time_per_turn = []
-
 
         self.board = [
             [ 0,   0,   0,   0,  'R',  0,   0,   0,   0],
@@ -76,10 +74,7 @@ class MyPlayer(PlayerDivercite):
         self.depth_max = self.pick_depth_max(current_state, remaining_time)
         self.opponent_id = self.get_opponent_id(current_state)
         action = self.minimaxSearch(current_state, isMax)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        self.time_per_turn.append(elapsed_time)
-        print(f"Temps d'exécution pour ce tour : {elapsed_time:.4f} secondes")
+        self.depth_dict[current_state.step] = self.depth_max
         return action 
 
 ################ Minmax part ################
