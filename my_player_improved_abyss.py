@@ -360,7 +360,6 @@ class MyPlayer(PlayerDivercite):
         return None
                     
     def sort_divercity(self, divercities: List[Tuple[Tuple[int, int], int]]) -> List[Tuple[Tuple[int, int], int]]:
-        # Sort by the number of missing resources (ascending)
         return sorted(divercities, key=lambda x: x[1])
 
 
@@ -376,7 +375,6 @@ class MyPlayer(PlayerDivercite):
         return float(eval)
 
     def is_city_placement(self, action: LightAction):
-        # if city then return True else False
         if (action.data['piece'][1] == 'C'):
             return 1
         return 0
@@ -528,7 +526,6 @@ class MyPlayer(PlayerDivercite):
         # I want to prioritize the resource that is most available and that will not give a point to the opponent
         my_remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {})
         city_color = city_piece.piece_type[:1]
-        # Initialize the resource to choose and the amount left
         resource_to_choose = None
         amount_left = 0
 
@@ -574,7 +571,6 @@ class MyPlayer(PlayerDivercite):
             List[str]: A list of resource types surrounding the city.
         """
 
-        # Get the resources surrounding a city
         resources = []
         for direction in state.get_neighbours(city[0], city[1]):
             piece, _ = state.get_neighbours(city[0], city[1])[direction]
@@ -595,7 +591,6 @@ class MyPlayer(PlayerDivercite):
             Action: The action to place a city, or None if all cities are placed.
         """
 
-        # Focuses on placing same color cities next to each others
         already_place_city = self.get_player_cities_with_piece(current_state, self.get_id())
         remaining_pieces = current_state.players_pieces_left.get(self.get_id(), {}) 
                           
