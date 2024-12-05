@@ -10,7 +10,7 @@ from collections import OrderedDict
 import random
 import time
 
-TABLE_MAX_SIZE = 30000000 # 30 million entries to use the 4GB of RAM with small risk to overflow. Max is 51 million entries
+TABLE_MAX_SIZE = 30000000
 
 class MyPlayer(PlayerDivercite):
     """
@@ -67,15 +67,13 @@ class MyPlayer(PlayerDivercite):
         Returns:
             Action: The best action as determined by minimax.
         """
-        start_time = time.time()
 
         isMax = current_state.step%2 == 0
 
         self.depth_max = self.pick_depth_max(current_state, remaining_time)
         self.opponent_id = self.get_opponent_id(current_state)
         action = self.minimaxSearch(current_state, isMax)
-        self.depth_dict[current_state.step] = self.depth_max
-        return action 
+        return action
 
 ################ Minmax part ################
 
@@ -90,11 +88,11 @@ class MyPlayer(PlayerDivercite):
         if self.use_transposition_table:
             state_hash = self.hash_state(state)
             if state_hash in self.transposition_table:
-                #We return the already calculated value of that state from the transposition table
+                # We return the already calculated value of that state from the transposition table
                 return self.transposition_table[state_hash]
 
         if self.isTerminal(counter):
-            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            result = self.evaluation(state, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
             if self.use_transposition_table:
                 # We store the result in the transposition table
                 self.transposition_table[state_hash] = result
@@ -130,7 +128,7 @@ class MyPlayer(PlayerDivercite):
                 return self.transposition_table[state_hash]
 
         if self.isTerminal(counter):
-            result = self.evaluation(state, main_action, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
+            result = self.evaluation(state, state.scores[self.get_id()] - state.scores[self.opponent_id]), None #, all_actions_divercity
             if self.use_transposition_table:
                 # We store the result in the transposition table
                 self.transposition_table[state_hash] = result
@@ -156,7 +154,7 @@ class MyPlayer(PlayerDivercite):
         return v_star, m_star
         
     def isTerminal(self, counter):
-        return self.depth_max == counter #self.counter
+        return self.depth_max == counter
 
     def getPossibleActions(self, state: GameState):
         return state.generate_possible_light_actions()
@@ -185,10 +183,8 @@ class MyPlayer(PlayerDivercite):
         """
         if remaining_time < 20:
             return 2
-        if current_state.step < 23:
+        if current_state.step < 28:
             return 2
-        if current_state.step < 27:
-            return 3
         elif current_state.step < 35: 
             return 4
         else:
@@ -343,7 +339,7 @@ class MyPlayer(PlayerDivercite):
         my_remaining_pieces = current_state.players_pieces_left.get(my_player_id, {})
         ordered_opponents_all_possible_divercities = self.get_all_possible_divercities(current_state, opponent_id) #sorted(self.get_all_possible_divercities(current_state, opponent_id), key=lambda x: len(x[1]))
         single_resource_left_divercities = [divercity for divercity in ordered_opponents_all_possible_divercities if len(divercity[1]) == 1]
-        # I only need to prevent the opponent from getting a divercity when a single resource missing
+        # I only need to prevent the opponent from getting a divercity when a single resource is missing
         for (x, y), resources_missing, city_piece in single_resource_left_divercities:
 
             neighbours = current_state.get_neighbours(x, y)
@@ -370,13 +366,12 @@ class MyPlayer(PlayerDivercite):
 
 ################ Heuristic part ################
 
-    def evaluation(self, state:GameStateDivercite, action: LightAction, score:int) -> float:
+    def evaluation(self, state:GameStateDivercite, score:int) -> float:
         min_available_resource = 0.8*self.get_minimum_unique_resource(state, self.get_id())
-        # min_oppo_available_resource = -0.1*self.get_minimum_unique_resource(state, self.get_opponent_id(state))
         potential_divercities =  self.get_one_ressource_divercity( state, self.get_id())
         my_divercities = 0.8*self.get_amount_divercity(state, self.get_id())
         block_score = 0.6*self.get_block_opponent_divercity_potential(state)
-        eval = score + min_available_resource + potential_divercities + my_divercities + block_score #+ min_oppo_available_resource
+        eval = score + min_available_resource + potential_divercities + my_divercities + block_score
 
         return float(eval)
 
@@ -505,16 +500,12 @@ class MyPlayer(PlayerDivercite):
     
 
     def get_neighboring_cities(self, row, col):
-        # Define the possible moves (up, down, left, right)
         moves = [(1, 1),(-1, -1), (-1, 1), (1, -1)]
         neighbors = []
         
-        # Check each move to see if it leads to a city
         for move in moves:
             new_col, new_row  = col + move[0], row + move[1]
-            # Ensure the new position is within the board boundaries
             if 0 <= new_row < len(self.board) and 0 <= new_col < len(self.board[0]):
-                # Check if the cell is a city ('C')
                 if self.board[new_col][new_row] == 'C':
                     neighbors.append((new_col,new_row))
         
