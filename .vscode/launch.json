@@ -13,7 +13,7 @@
             "args": [
                 "-t",
                 "local",
-                "my_player_improved_abyss.py",
+                "my_player.py",
                 "my_player_alpha_beta_pruning_city.py",
                 
             ]
